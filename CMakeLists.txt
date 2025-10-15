@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 2.6)
+cmake_minimum_required (VERSION 3.16)
 project(rovio)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -march=native")
 set(ROVIO_NMAXFEATURE 25 CACHE STRING "Number of features for ROVIO")
@@ -13,7 +13,8 @@ add_definitions(-DROVIO_PATCHSIZE=${ROVIO_PATCHSIZE})
 add_definitions(-DROVIO_NPOSE=${ROVIO_NPOSE})
 
 add_subdirectory(lightweight_filtering)
-
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 ##################### Find, include, and compile library #####################
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 if(0)
@@ -56,10 +57,10 @@ endif()
 
 
 ##################### Install ROS stuff #####################
-find_package(catkin REQUIRED COMPONENTS
+find_package(ament_cmake REQUIRED COMPONENTS
 	lightweight_filtering
   	kindr
-	roscpp
+	rclcpp
 	roslib
 	cv_bridge
 	message_generation
@@ -70,16 +71,19 @@ find_package(catkin REQUIRED COMPONENTS
 	tf
 	rosbag
 )
-
-add_service_files(
-  DIRECTORY srv
-  FILES SrvResetToPose.srv
+find_package(rosidl_default_generators REQUIRED)
+find_package(geometry_msgs REQUIRED)
+#add_service_files(
+#  DIRECTORY srv
+ # FILES SrvResetToPose.srv
+#)
+rosidl_generate_interfaces(${PROJECT_NAME}
+		"srv/SrvResetToPose.srv"
+		DEPENDENCIES geometry_msgs  # list any pkgs referenced in .srv
 )
 
-generate_messages(DEPENDENCIES
-  std_msgs
-  geometry_msgs
-)
+ament_export_dependencies(rosidl_default_runtime)
+
 
 catkin_package(
 	INCLUDE_DIRS include ${catkin_INCLUDE_DIRS}
@@ -134,3 +138,6 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/gtest/")
 	target_link_libraries(test_mlp gtest_main gtest pthread ${catkin_LIBRARIES} ${YamlCpp_LIBRARIES})
 	add_test(test_mlp test_mlp)
 endif()
+
+
+ament_cmake()
