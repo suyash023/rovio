@@ -33,9 +33,8 @@
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
-#include <ros/ros.h>
-#include <ros/package.h>
-#include <geometry_msgs/Pose.h>
+#include <rclcpp/rclcpp.hpp>
+#include <geometry_msgs/msg/pose_stamped.hpp>
 #pragma GCC diagnostic pop
 
 #include "rovio/RovioFilter.hpp"
@@ -80,39 +79,43 @@ typedef rovio::RovioFilter<rovio::FilterState<nMax_,nLevels_,patchSize_,nCam_,nP
 static rovio::RovioScene<mtFilter> mRovioScene;
 
 void idleFunc(){
-  ros::spinOnce();
+  rclpp::spinOnce();
   mRovioScene.drawScene(mRovioScene.mpFilter_->safe_);
 }
 #endif
 
-int main(int argc, char** argv){
-  ros::init(argc, argv, "rovio");
-  ros::NodeHandle nh;
-  ros::NodeHandle nh_private("~");
-
-  std::string rootdir = ros::package::getPath("rovio"); // Leaks memory
-  std::string filter_config = rootdir + "/cfg/rovio.info";
-
-  nh_private.param("filter_config", filter_config, filter_config);
-
-  // Filter
-  std::shared_ptr<mtFilter> mpFilter(new mtFilter);
-  mpFilter->readFromInfo(filter_config);
-
-  // Force the camera calibration paths to the ones from ROS parameters.
+void readCameraConfig(std::shared_ptr<mtFilter> mpFilter) {
   for (unsigned int camID = 0; camID < nCam_; ++camID) {
     std::string camera_config;
     if (nh_private.getParam("camera" + std::to_string(camID)
                             + "_config", camera_config)) {
       mpFilter->cameraCalibrationFile_[camID] = camera_config;
-    }
+                            }
   }
+
+
+}
+
+int main(int argc, char** argv){
+  rclcpp::init(argc, argv);
+  //ros::NodeHandle nh;
+  //ros::NodeHandle nh_private("~");
+  //std::string rootdir = ros::package::getPath("rovio"); // Leaks memory
+  //std::string filter_config = rootdir + "/cfg/rovio.info";
+
+  //nh_private.param("filter_config", filter_config, filter_config);
+
+  // Filter
+  std::shared_ptr<mtFilter> mpFilter(new mtFilter);
+  mpFilter->readFromInfo(filter_config);
+
+  readCameraConfig(mpFilter);
   mpFilter->refreshProperties();
 
   // Node
-  rovio::RovioNode<mtFilter> rovioNode(nh, nh_private, mpFilter);
-  rovioNode.makeTest();
 
+  auto node = std::make_shared<rovio::RovioNode<mtFilter>>(mpFilter);
+  node->makeTest();
 #ifdef MAKE_SCENE
   // Scene
   std::string mVSFileName = rootdir + "/shaders/shader.vs";
@@ -122,7 +125,7 @@ int main(int argc, char** argv){
   mRovioScene.addKeyboardCB('r',[&rovioNode]() mutable {rovioNode.requestReset();});
   glutMainLoop();
 #else
-  ros::spin();
+  rclcpp::spin(node);
 #endif
   return 0;
 }
