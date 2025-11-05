@@ -35,6 +35,8 @@ find_package(geometry_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(std_srvs REQUIRED)
+find_package(visualization_msgs REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(tf2 REQUIRED)
@@ -86,6 +88,8 @@ ament_target_dependencies(${PROJECT_NAME}_lib
 		std_msgs
 		cv_bridge
 		tf2
+		std_srvs
+		visualization_msgs
 )
 
 target_link_libraries(${PROJECT_NAME}_lib
@@ -108,6 +112,10 @@ target_link_libraries(rovio_rosbag_loader ${PROJECT_NAME}_lib)
 add_executable(feature_tracker_node src/feature_tracker_node.cpp)
 ament_target_dependencies(feature_tracker_node rclcpp)
 target_link_libraries(feature_tracker_node ${PROJECT_NAME}_lib)
+
+rosidl_target_interfaces(rovio_node ${PROJECT_NAME} "rosidl_typesupport_cpp")
+rosidl_target_interfaces(rovio_rosbag_loader ${PROJECT_NAME} "rosidl_typesupport_cpp")
+rosidl_target_interfaces(feature_tracker_node ${PROJECT_NAME} "rosidl_typesupport_cpp")
 
 # --- Install ---
 install(TARGETS
