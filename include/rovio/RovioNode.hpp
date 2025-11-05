@@ -48,7 +48,8 @@
 //transform broadcaster in tf2
 #include <tf2/transform_datatypes.hpp>
 #include <visualization_msgs/msg/marker.hpp>
-#include "rovio/msg/"
+//Figure out why there are no srv includes
+// #include <rovio/SrvResetToPose.h>
 #include "rovio/RovioFilter.hpp"
 #include "rovio/CoordinateTransform/RovioOutput.hpp"
 #include "rovio/CoordinateTransform/FeatureOutput.hpp"
@@ -191,7 +192,7 @@ class RovioNode : public rclcpp::Node {
   /** \brief Constructor
    */
   RovioNode(std::shared_ptr<mtFilter> mpFilter)
-      : mpFilter_(mpFilter), transformFeatureOutputCT_(&mpFilter->multiCamera_), landmarkOutputImuCT_(&mpFilter->multiCamera_),
+      : rclcpp::Node("rovio"), mpFilter_(mpFilter), transformFeatureOutputCT_(&mpFilter->multiCamera_), landmarkOutputImuCT_(&mpFilter->multiCamera_),
         cameraOutputCov_((int)(mtOutput::D_),(int)(mtOutput::D_)), featureOutputCov_((int)(FeatureOutput::D_),(int)(FeatureOutput::D_)), landmarkOutputCov_(3,3),
         featureOutputReadableCov_((int)(FeatureOutputReadable::D_), (int)(FeatureOutputReadable::D_))
   {
@@ -861,7 +862,7 @@ class RovioNode : public rclcpp::Node {
 
         // Publish Extrinsics
         for(int camID=0;camID<mtState::nCam_;camID++){
-          if(pubExtrinsics_[camID].getNumSubscribers() > 0 || forceExtrinsicsPublishing_){
+          if(pubExtrinsics_[camID]->get_subscription_count() > 0 || forceExtrinsicsPublishing_){
             extrinsicsMsg_[camID].header.stamp = rclcpp::Time(mpFilter_->safe_.t_);
             extrinsicsMsg_[camID].pose.pose.position.x = state.MrMC(camID)(0);
             extrinsicsMsg_[camID].pose.pose.position.y = state.MrMC(camID)(1);
