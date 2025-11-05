@@ -92,8 +92,6 @@ void readCameraConfig(std::shared_ptr<mtFilter> mpFilter) {
       mpFilter->cameraCalibrationFile_[camID] = camera_config;
                             }
   }
-
-
 }
 
 int main(int argc, char** argv){
