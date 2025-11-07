@@ -26,9 +26,9 @@
 *
 */
 
-#include <ros/package.h>
-#include <rosbag/bag.h>
-#include <rosbag/view.h>
+#include <rclcpp/rclcpp.hpp>
+#include <rosbag2_cpp/reader.hpp>
+#include <rosbag2_storage/storage_options.hpp>
 #include <memory>
 #include <iostream>
 #include <locale>
@@ -39,6 +39,8 @@
 #include <boost/foreach.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/date_time/posix_time/posix_time_io.hpp>
+
+#include "rovio/RovioNode.hpp"
 #define foreach BOOST_FOREACH
 
 #ifdef ROVIO_NMAXFEATURE
@@ -74,56 +76,50 @@ static constexpr int nPose_ = 0; // Additional pose states.
 typedef rovio::RovioFilter<rovio::FilterState<nMax_,nLevels_,patchSize_,nCam_,nPose_>> mtFilter;
 
 int main(int argc, char** argv){
-  ros::init(argc, argv, "rovio");
-  ros::NodeHandle nh;
-  ros::NodeHandle nh_private("~");
-
-  std::string rootdir = ros::package::getPath("rovio"); // Leaks memory
-  std::string filter_config = rootdir + "/cfg/rovio.info";
-
-  nh_private.param("filter_config", filter_config, filter_config);
+  rclcpp::init(argc, argv);
+  std::string filter_config;
 
   // Filter
   std::shared_ptr<mtFilter> mpFilter(new mtFilter);
+  auto rovioNode = std::make_shared<rovio::RovioNode<mtFilter>>(mpFilter);
+  rovioNode->get_parameter("filter_config", filter_config);
   mpFilter->readFromInfo(filter_config);
 
   // Force the camera calibration paths to the ones from ROS parameters.
   for (unsigned int camID = 0; camID < nCam_; ++camID) {
     std::string camera_config;
-    if (nh_private.getParam("camera" + std::to_string(camID)
+    if (rovioNode->get_parameter("camera" + std::to_string(camID)
                             + "_config", camera_config)) {
       mpFilter->cameraCalibrationFile_[camID] = camera_config;
     }
   }
   mpFilter->refreshProperties();
-
-  // Node
-  rovio::RovioNode<mtFilter> rovioNode(nh, nh_private, mpFilter);
-  rovioNode.makeTest();
+  
+  rovioNode->makeTest();
   double resetTrigger = 0.0;
-  nh_private.param("record_odometry", rovioNode.forceOdometryPublishing_, rovioNode.forceOdometryPublishing_);
-  nh_private.param("record_pose_with_covariance_stamped", rovioNode.forcePoseWithCovariancePublishing_, rovioNode.forcePoseWithCovariancePublishing_);
-  nh_private.param("record_transform", rovioNode.forceTransformPublishing_, rovioNode.forceTransformPublishing_);
-  nh_private.param("record_extrinsics", rovioNode.forceExtrinsicsPublishing_, rovioNode.forceExtrinsicsPublishing_);
-  nh_private.param("record_imu_bias", rovioNode.forceImuBiasPublishing_, rovioNode.forceImuBiasPublishing_);
-  nh_private.param("record_pcl", rovioNode.forcePclPublishing_, rovioNode.forcePclPublishing_);
-  nh_private.param("record_markers", rovioNode.forceMarkersPublishing_, rovioNode.forceMarkersPublishing_);
-  nh_private.param("record_patch", rovioNode.forcePatchPublishing_, rovioNode.forcePatchPublishing_);
-  nh_private.param("reset_trigger", resetTrigger, resetTrigger);
+  rovioNode->get_parameter("record_odometry", rovioNode->forceOdometryPublishing_);
+  rovioNode->get_parameter("record_pose_with_covariance_stamped", rovioNode->forcePoseWithCovariancePublishing_);
+  rovioNode->get_parameter("record_transform", rovioNode->forceTransformPublishing_);
+  rovioNode->get_parameter("record_extrinsics", rovioNode->forceExtrinsicsPublishing_);
+  rovioNode->get_parameter("record_imu_bias", rovioNode->forceImuBiasPublishing_);
+  rovioNode->get_parameter("record_pcl", rovioNode->forcePclPublishing_);
+  rovioNode->get_parameter("record_markers", rovioNode->forceMarkersPublishing_);
+  rovioNode->get_parameter("record_patch", rovioNode->forcePatchPublishing_);
+  rovioNode->get_parameter("reset_trigger", resetTrigger);
 
   std::cout << "Recording";
-  if(rovioNode.forceOdometryPublishing_) std::cout << ", odometry";
-  if(rovioNode.forceTransformPublishing_) std::cout << ", transform";
-  if(rovioNode.forceExtrinsicsPublishing_) std::cout << ", extrinsics";
-  if(rovioNode.forceImuBiasPublishing_) std::cout << ", imu biases";
-  if(rovioNode.forcePclPublishing_) std::cout << ", point cloud";
-  if(rovioNode.forceMarkersPublishing_) std::cout << ", markers";
-  if(rovioNode.forcePatchPublishing_) std::cout << ", patch data";
+  if(rovioNode->forceOdometryPublishing_) std::cout << ", odometry";
+  if(rovioNode->forceTransformPublishing_) std::cout << ", transform";
+  if(rovioNode->forceExtrinsicsPublishing_) std::cout << ", extrinsics";
+  if(rovioNode->forceImuBiasPublishing_) std::cout << ", imu biases";
+  if(rovioNode->forcePclPublishing_) std::cout << ", point cloud";
+  if(rovioNode->forceMarkersPublishing_) std::cout << ", markers";
+  if(rovioNode->forcePatchPublishing_) std::cout << ", patch data";
   std::cout << std::endl;
 
   rosbag::Bag bagIn;
   std::string rosbag_filename = "dataset.bag";
-  nh_private.param("rosbag_filename", rosbag_filename, rosbag_filename);
+  rovioNode->get_parameter("rosbag_filename", rosbag_filename);
   bagIn.open(rosbag_filename, rosbag::bagmode::Read);
 
   rosbag::Bag bagOut;
@@ -139,9 +135,9 @@ int main(int argc, char** argv){
   boost::posix_time::time_facet* facet = new boost::posix_time::time_facet();
   facet->format("%Y-%m-%d-%H-%M-%S");
   stream.imbue(std::locale(std::locale::classic(), facet));
-  stream << ros::Time::now().toBoost() << "_" << nMax_ << "_" << nLevels_ << "_" << patchSize_ << "_" << nCam_  << "_" << nPose_;
+  stream << rovioNode->get_clock()->now().seconds() << "_" << nMax_ << "_" << nLevels_ << "_" << patchSize_ << "_" << nCam_  << "_" << nPose_;
   std::string filename_out = file_path + "/rovio/" + stream.str();
-  nh_private.param("filename_out", filename_out, filename_out);
+  rovioNode->get_parameter("filename_out", filename_out);
   std::string rosbag_filename_out = filename_out + ".bag";
   std::string info_filename_out = filename_out + ".info";
   std::cout << "Storing output to: " << rosbag_filename_out << std::endl;
@@ -154,21 +150,21 @@ int main(int argc, char** argv){
 
   std::vector<std::string> topics;
   std::string imu_topic_name = "/imu0";
-  nh_private.param("imu_topic_name", imu_topic_name, imu_topic_name);
+  rovioNode->get_parameter("imu_topic_name", imu_topic_name);
   std::string cam0_topic_name = "/cam0/image_raw";
-  nh_private.param("cam0_topic_name", cam0_topic_name, cam0_topic_name);
+  rovioNode->get_parameter("cam0_topic_name", cam0_topic_name);
   std::string cam1_topic_name = "/cam1/image_raw";
-  nh_private.param("cam1_topic_name", cam1_topic_name, cam1_topic_name);
-  std::string odometry_topic_name = rovioNode.pubOdometry_.getTopic();
-  std::string transform_topic_name = rovioNode.pubTransform_.getTopic();
+  rovioNode->get_parameter("cam1_topic_name", cam1_topic_name);
+  std::string odometry_topic_name = rovioNode->pubOdometry_->get_topic_name();
+  std::string transform_topic_name = rovioNode->pubTransform_->get_topic_name();
   std::string extrinsics_topic_name[mtFilter::mtState::nCam_];
   for(int camID=0;camID<mtFilter::mtState::nCam_;camID++){
-    extrinsics_topic_name[camID] = rovioNode.pubExtrinsics_[camID].getTopic();
+    extrinsics_topic_name[camID] = rovioNode->pubExtrinsics_[camID]->get_topic_name();
   }
-  std::string imu_bias_topic_name = rovioNode.pubImuBias_.getTopic();
-  std::string pcl_topic_name = rovioNode.pubPcl_.getTopic();
-  std::string u_rays_topic_name = rovioNode.pubMarkers_.getTopic();
-  std::string patch_topic_name = rovioNode.pubPatch_.getTopic();
+  std::string imu_bias_topic_name = rovioNode->pubImuBias_->get_topic_name();
+  std::string pcl_topic_name = rovioNode->pubPcl_->get_topic_name();
+  std::string u_rays_topic_name = rovioNode->pubMarkers_->get_topic_name();
+  std::string patch_topic_name = rovioNode->pubPatch_->get_topic_name();
 
   topics.push_back(std::string(imu_topic_name));
   topics.push_back(std::string(cam0_topic_name));
@@ -178,43 +174,43 @@ int main(int argc, char** argv){
 
   bool isTriggerInitialized = false;
   double lastTriggerTime = 0.0;
-  for(rosbag::View::iterator it = view.begin();it != view.end() && ros::ok();it++){
-    if(it->getTopic() == imu_topic_name){
-      sensor_msgs::Imu::ConstPtr imuMsg = it->instantiate<sensor_msgs::Imu>();
-      if (imuMsg != NULL) rovioNode.imuCallback(imuMsg);
+  for(rosbag::View::iterator it = view.begin();it != view.end() && rclcpp::ok();it++){
+    if(it->get_topic_name() == imu_topic_name){
+      sensor_msgs::msg::Imu::ConstPtr imuMsg = it->instantiate<sensor_msgs::msg::Imu>();
+      if (imuMsg != NULL) rovioNode->imuCallback(imuMsg);
     }
-    if(it->getTopic() == cam0_topic_name){
-      sensor_msgs::ImageConstPtr imgMsg = it->instantiate<sensor_msgs::Image>();
-      if (imgMsg != NULL) rovioNode.imgCallback0(imgMsg);
+    if(it->get_topic_name() == cam0_topic_name){
+      sensor_msgs::msg::Image::ConstPtr imgMsg = it->instantiate<sensor_msgs::msg::Image>();
+      if (imgMsg != NULL) rovioNode->imgCallback0(imgMsg);
     }
-    if(it->getTopic() == cam1_topic_name){
-      sensor_msgs::ImageConstPtr imgMsg = it->instantiate<sensor_msgs::Image>();
-      if (imgMsg != NULL) rovioNode.imgCallback1(imgMsg);
+    if(it->get_topic_name() == cam1_topic_name){
+      sensor_msgs::msg::Image::ConstPtr imgMsg = it->instantiate<sensor_msgs::msg::Image>();
+      if (imgMsg != NULL) rovioNode->imgCallback1(imgMsg);
     }
     ros::spinOnce();
 
-    if(rovioNode.gotFirstMessages_){
-      static double lastSafeTime = rovioNode.mpFilter_->safe_.t_;
-      if(rovioNode.mpFilter_->safe_.t_ > lastSafeTime){
-        if(rovioNode.forceOdometryPublishing_) bagOut.write(odometry_topic_name,ros::Time::now(),rovioNode.odometryMsg_);
-        if(rovioNode.forceTransformPublishing_) bagOut.write(transform_topic_name,ros::Time::now(),rovioNode.transformMsg_);
+    if(rovioNode->gotFirstMessages_){
+      static double lastSafeTime = rovioNode->mpFilter_->safe_.t_;
+      if(rovioNode->mpFilter_->safe_.t_ > lastSafeTime){
+        if(rovioNode->forceOdometryPublishing_) bagOut.write(odometry_topic_name,rovioNode->get_clock()->now(),rovioNode->odometryMsg_);
+        //if(rovioNode->forceTransformPublishing_) bagOut.write(transform_topic_name,rovioNode->get_clock()->now(),rovioNode->transformMsg_);
         for(int camID=0;camID<mtFilter::mtState::nCam_;camID++){
-          if(rovioNode.forceExtrinsicsPublishing_) bagOut.write(extrinsics_topic_name[camID],ros::Time::now(),rovioNode.extrinsicsMsg_[camID]);
+          if(rovioNode->forceExtrinsicsPublishing_) bagOut.write(extrinsics_topic_name[camID],rovioNode->get_clock()->now(),rovioNode->extrinsicsMsg_[camID]);
         }
-        if(rovioNode.forceImuBiasPublishing_) bagOut.write(imu_bias_topic_name,ros::Time::now(),rovioNode.imuBiasMsg_);
-        if(rovioNode.forcePclPublishing_) bagOut.write(pcl_topic_name,ros::Time::now(),rovioNode.pclMsg_);
-        if(rovioNode.forceMarkersPublishing_) bagOut.write(u_rays_topic_name,ros::Time::now(),rovioNode.markerMsg_);
-        if(rovioNode.forcePatchPublishing_) bagOut.write(patch_topic_name,ros::Time::now(),rovioNode.patchMsg_);
-        lastSafeTime = rovioNode.mpFilter_->safe_.t_;
+        if(rovioNode->forceImuBiasPublishing_) bagOut.write(imu_bias_topic_name,rovioNode->get_clock()->now(),rovioNode->imuBiasMsg_);
+        if(rovioNode->forcePclPublishing_) bagOut.write(pcl_topic_name,rovioNode->get_clock()->now(),rovioNode->pclMsg_);
+        if(rovioNode->forceMarkersPublishing_) bagOut.write(u_rays_topic_name,rovioNode->get_clock()->now(),rovioNode->markerMsg_);
+        if(rovioNode->forcePatchPublishing_) bagOut.write(patch_topic_name,rovioNode->get_clock()->now(),rovioNode->patchMsg_);
+        lastSafeTime = rovioNode->mpFilter_->safe_.t_;
       }
       if(!isTriggerInitialized){
         lastTriggerTime = lastSafeTime;
         isTriggerInitialized = true;
       }
       if(resetTrigger>0.0 && lastSafeTime - lastTriggerTime > resetTrigger){
-        rovioNode.requestReset();
-        rovioNode.mpFilter_->init_.state_.WrWM() = rovioNode.mpFilter_->safe_.state_.WrWM();
-        rovioNode.mpFilter_->init_.state_.qWM() = rovioNode.mpFilter_->safe_.state_.qWM();
+        rovioNode->requestReset();
+        rovioNode->mpFilter_->init_.state_.WrWM() = rovioNode->mpFilter_->safe_.state_.WrWM();
+        rovioNode->mpFilter_->init_.state_.qWM() = rovioNode->mpFilter_->safe_.state_.qWM();
         lastTriggerTime = lastSafeTime;
       }
     }

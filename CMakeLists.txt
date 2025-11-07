@@ -41,7 +41,8 @@ find_package(rclcpp REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
-
+find_package(rosbag2_cpp REQUIRED)
+find_package(rosbag2_storage REQUIRED)
 # Optional visualization dependencies
 if(MAKE_SCENE)
 	message(STATUS "Building ROVIO with OpenGL Scene Visualization")
@@ -90,6 +91,8 @@ ament_target_dependencies(${PROJECT_NAME}_lib
 		tf2
 		std_srvs
 		visualization_msgs
+		rosbag2_cpp
+		rosbag2_storage
 )
 
 target_link_libraries(${PROJECT_NAME}_lib
