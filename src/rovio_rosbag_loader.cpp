@@ -27,7 +27,9 @@
 */
 
 #include <rclcpp/rclcpp.hpp>
+#include <rclcpp/serialization.hpp>
 #include <rosbag2_cpp/reader.hpp>
+#include <rosbag2_cpp/writer.hpp>
 #include <rosbag2_storage/storage_options.hpp>
 #include <memory>
 #include <iostream>
@@ -75,6 +77,38 @@ static constexpr int nPose_ = 0; // Additional pose states.
 
 typedef rovio::RovioFilter<rovio::FilterState<nMax_,nLevels_,patchSize_,nCam_,nPose_>> mtFilter;
 
+/**
+ * @brief function to deserialize a template sample message, to read from a rosbag.
+ * @tparam T
+ * @param msg
+ * @return T type. Msg type/
+ */
+template <typename T>
+T deserializeMessage(auto msg) {
+  rclcpp::SerializedMessage extractedMsg(*msg->serialized_data);
+  rclcpp::Serialization<T> deserializer;
+  T returnMsg;
+  deserializer.deserialize_message(&extractedMsg, &returnMsg);
+  return returnMsg;
+}
+
+
+/**
+ *
+ * @brief function to serialize the message, to store in the bag file.
+ * @tparam Message type
+ * @param msg to serialize
+ * @return generalized serialized msg to store in bag file
+ */
+template <typename T>
+rclcpp::SerializedMessage serializeMessage(T msgToSerialize ) {
+  rclcpp::SerializedMessage serializedMsg;
+  rclcpp::Serialization<T> serializer;
+  serializer.serialize_message(&msgToSerialize, &serializedMsg);
+  return serializedMsg;
+}
+
+
 int main(int argc, char** argv){
   rclcpp::init(argc, argv);
   std::string filter_config;
@@ -117,12 +151,12 @@ int main(int argc, char** argv){
   if(rovioNode->forcePatchPublishing_) std::cout << ", patch data";
   std::cout << std::endl;
 
-  rosbag::Bag bagIn;
+  rosbag2_cpp::Reader bagIn;
   std::string rosbag_filename = "dataset.bag";
   rovioNode->get_parameter("rosbag_filename", rosbag_filename);
-  bagIn.open(rosbag_filename, rosbag::bagmode::Read);
+  bagIn.open(rosbag_filename);
 
-  rosbag::Bag bagOut;
+  rosbag2_cpp::Writer bagOut;
   std::size_t found = rosbag_filename.find_last_of("/");
   std::string file_path = rosbag_filename.substr(0,found);
   std::string file_name = rosbag_filename.substr(found+1);
@@ -141,7 +175,7 @@ int main(int argc, char** argv){
   std::string rosbag_filename_out = filename_out + ".bag";
   std::string info_filename_out = filename_out + ".info";
   std::cout << "Storing output to: " << rosbag_filename_out << std::endl;
-  bagOut.open(rosbag_filename_out, rosbag::bagmode::Write);
+  bagOut.open(rosbag_filename_out);
 
   // Copy info
   std::ifstream  src(filter_config, std::ios::binary);
@@ -169,38 +203,56 @@ int main(int argc, char** argv){
   topics.push_back(std::string(imu_topic_name));
   topics.push_back(std::string(cam0_topic_name));
   topics.push_back(std::string(cam1_topic_name));
-  rosbag::View view(bagIn, rosbag::TopicQuery(topics));
 
 
   bool isTriggerInitialized = false;
   double lastTriggerTime = 0.0;
-  for(rosbag::View::iterator it = view.begin();it != view.end() && rclcpp::ok();it++){
-    if(it->get_topic_name() == imu_topic_name){
-      sensor_msgs::msg::Imu::ConstPtr imuMsg = it->instantiate<sensor_msgs::msg::Imu>();
-      if (imuMsg != NULL) rovioNode->imuCallback(imuMsg);
+  while (bagIn.has_next()) {
+    auto serializedMsg = bagIn.read_next();
+    if(serializedMsg->topic_name == imu_topic_name){
+      sensor_msgs::msg::Imu imuMsg = deserializeMessage<sensor_msgs::msg::Imu>(serializedMsg);
+      sensor_msgs::msg::Imu::ConstPtr imuMsgPtr = std::make_shared<sensor_msgs::msg::Imu>(imuMsg);
+      if (imuMsgPtr != NULL) rovioNode->imuCallback(imuMsgPtr);
     }
-    if(it->get_topic_name() == cam0_topic_name){
-      sensor_msgs::msg::Image::ConstPtr imgMsg = it->instantiate<sensor_msgs::msg::Image>();
-      if (imgMsg != NULL) rovioNode->imgCallback0(imgMsg);
+    if(serializedMsg->topic_name == cam0_topic_name){
+      sensor_msgs::msg::Image imgMsg =  deserializeMessage<sensor_msgs::msg::Image>(serializedMsg);
+      sensor_msgs::msg::Image::ConstPtr imgMsgPtr = std::make_shared<sensor_msgs::msg::Image>(imgMsg);
+      if (imgMsgPtr != NULL) rovioNode->imgCallback0(imgMsgPtr);
     }
-    if(it->get_topic_name() == cam1_topic_name){
-      sensor_msgs::msg::Image::ConstPtr imgMsg = it->instantiate<sensor_msgs::msg::Image>();
-      if (imgMsg != NULL) rovioNode->imgCallback1(imgMsg);
+    if(serializedMsg->topic_name == cam1_topic_name){
+      sensor_msgs::msg::Image imgMsg2 = deserializeMessage<sensor_msgs::msg::Image>(serializedMsg);
+      sensor_msgs::msg::Image::ConstPtr imgMsg2Ptr = std::make_shared<sensor_msgs::msg::Image>(imgMsg2);
+      if (imgMsg2Ptr != NULL) rovioNode->imgCallback1(imgMsg2Ptr);
     }
-    ros::spinOnce();
+    rclcpp::spin_some(rovioNode);
 
     if(rovioNode->gotFirstMessages_){
       static double lastSafeTime = rovioNode->mpFilter_->safe_.t_;
       if(rovioNode->mpFilter_->safe_.t_ > lastSafeTime){
-        if(rovioNode->forceOdometryPublishing_) bagOut.write(odometry_topic_name,rovioNode->get_clock()->now(),rovioNode->odometryMsg_);
-        //if(rovioNode->forceTransformPublishing_) bagOut.write(transform_topic_name,rovioNode->get_clock()->now(),rovioNode->transformMsg_);
-        for(int camID=0;camID<mtFilter::mtState::nCam_;camID++){
-          if(rovioNode->forceExtrinsicsPublishing_) bagOut.write(extrinsics_topic_name[camID],rovioNode->get_clock()->now(),rovioNode->extrinsicsMsg_[camID]);
+        if(rovioNode->forceOdometryPublishing_)
+        {
+          bagOut.write(rovioNode->odometryMsg_, odometry_topic_name, rovioNode->get_clock()->now());
         }
-        if(rovioNode->forceImuBiasPublishing_) bagOut.write(imu_bias_topic_name,rovioNode->get_clock()->now(),rovioNode->imuBiasMsg_);
-        if(rovioNode->forcePclPublishing_) bagOut.write(pcl_topic_name,rovioNode->get_clock()->now(),rovioNode->pclMsg_);
-        if(rovioNode->forceMarkersPublishing_) bagOut.write(u_rays_topic_name,rovioNode->get_clock()->now(),rovioNode->markerMsg_);
-        if(rovioNode->forcePatchPublishing_) bagOut.write(patch_topic_name,rovioNode->get_clock()->now(),rovioNode->patchMsg_);
+        //if(rovioNode->forceTransformPublishing_) bagOut.write(transform_topic_name,rovioNode->get_clock()->now(),rovioNode->transformMsg_);
+        for(int camID=0;camID<mtFilter::mtState::nCam_;camID++)
+        {
+          if(rovioNode->forceExtrinsicsPublishing_) {
+            bagOut.write(rovioNode->extrinsicsMsg_[camID],
+              extrinsics_topic_name[camID],rovioNode->get_clock()->now());
+          }
+        }
+        if(rovioNode->forceImuBiasPublishing_) {
+          bagOut.write(rovioNode->imuBiasMsg_,imu_bias_topic_name,rovioNode->get_clock()->now());
+        }
+        if(rovioNode->forcePclPublishing_) {
+          bagOut.write(rovioNode->pclMsg_, pcl_topic_name, rovioNode->get_clock()->now());
+        }
+        if(rovioNode->forceMarkersPublishing_) {
+          bagOut.write(rovioNode->odometryMsg_,odometry_topic_name,rovioNode->get_clock()->now());
+        }
+          if(rovioNode->forcePatchPublishing_) {
+            bagOut.write(rovioNode->patchMsg_, patch_topic_name, rovioNode->get_clock()->now());
+          }
         lastSafeTime = rovioNode->mpFilter_->safe_.t_;
       }
       if(!isTriggerInitialized){
