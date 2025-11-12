@@ -221,7 +221,7 @@ class RovioNode : public rclcpp::Node {
     //subGroundtruth_ = this->create_subscription<geometry_msgs::msg::PoseStamped>("pose", 1000,
      //             std::bind(&RovioNode::groundtruthCallback, this, std::placeholders::_1));
     subGroundtruthOdometry_ = this->create_subscription<nav_msgs::msg::Odometry>("odometry", 1000,
-                    std::bind(&RovioNode::subGroundtruthOdometry_,this,std::placeholders::_1 ));
+                    std::bind(&RovioNode::groundtruthOdometryCallback,this,std::placeholders::_1 ));
     subVelocity_ = this->create_subscription<geometry_msgs::msg::TwistStamped>("abss/twist", 1000,
                       std::bind(&RovioNode::velocityCallback, this, std::placeholders::_1));
 
