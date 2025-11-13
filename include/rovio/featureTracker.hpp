@@ -29,11 +29,10 @@
 #ifndef FEATURE_TRACKER_HPP_
 #define FEATURE_TRACKER_HPP_
 
-#include <ros/ros.h>
-#include <image_transport/image_transport.h>
+#include <rclcpp/rclcpp.hpp>
 #include <cv_bridge/cv_bridge.h>
-#include <sensor_msgs/image_encodings.h>
-#include <sensor_msgs/Imu.h>
+#include <sensor_msgs/msg/image.hpp>
+#include <sensor_msgs/msg/imu.hpp>
 #include "rovio/MultiCamera.hpp"
 #include "rovio/FeatureManager.hpp"
 #include "rovio/MultilevelPatchAlignment.hpp"
@@ -42,11 +41,10 @@ namespace rovio{
 
 /** \brief Ros Node, executing a MultilevelPatchFeature tracking on an incoming image stream.
  */
-class FeatureTrackerNode{
+class FeatureTrackerNode : public rclcpp::Node {
  public:
-  ros::NodeHandle nh_;
-  ros::Subscriber subImu_;  /**<IMU subscriber.*/
-  ros::Subscriber subImg_;  /**<Image subscriber.*/
+  rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr subImu_; /**<IMU subscriber.*/
+  rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr subImg_;/**<Image subscriber.*/
   static constexpr int nMax_ = 100;  /**<Maximum number of MultilevelPatchFeature%s in a MultilevelPatchSet.*/
   static constexpr int patchSize_ = 8;  /**<Edge length of the patches in pixels. Value must be a multiple of 2!*/
   static constexpr int nLevels_ = 4;  /**<Total number of image pyramid levels.*/
@@ -71,10 +69,12 @@ class FeatureTrackerNode{
 
   /** \brief Constructor
    */
-  FeatureTrackerNode(ros::NodeHandle& nh): nh_(nh), fsm_(&multiCamera_){
+  FeatureTrackerNode(): rclcpp::Node("feature_tracker"), fsm_(&multiCamera_){
     static_assert(l2>=l1, "l2 must be larger than l1");
-    subImu_ = nh_.subscribe("imuMeas", 1000, &FeatureTrackerNode::imuCallback,this);
-    subImg_ = nh_.subscribe("/cam0/image_raw", 1000, &FeatureTrackerNode::imgCallback,this);
+    subImu_ = this->create_subscription<sensor_msgs::msg::Imu>("imuMeas", 100,
+      std::bind(&FeatureTrackerNode::imuCallback, this, std::placeholders::_1));
+    subImg_ = this->create_subscription<sensor_msgs::msg::Image>("/cam0/image_raw", 100,
+      std::bind(&FeatureTrackerNode::imgCallback, this, std::placeholders::_1));
     min_feature_count_ = 50;
     max_feature_count_ = 20; // Maximal number of feature which is added at a time (not total)
     cv::namedWindow("Tracker");
@@ -88,7 +88,7 @@ class FeatureTrackerNode{
 
   /** \brief Empty, yet.
    */
-  void imuCallback(const sensor_msgs::Imu::ConstPtr& imu_msg){
+  void imuCallback(const sensor_msgs::msg::Imu::ConstPtr& imu_msg){
   }
 
   /** \brief Image callback, handling the tracking of MultilevelPatchFeature%s.
@@ -106,20 +106,20 @@ class FeatureTrackerNode{
    *
    *  @param img_msg - Image message (ros)
    */
-  void imgCallback(const sensor_msgs::ImageConstPtr & img_msg){
+  void imgCallback(const sensor_msgs::msg::Image::ConstPtr & img_msg){
     // Get image from msg
     cv_bridge::CvImagePtr cv_ptr;
     try {
       cv_ptr = cv_bridge::toCvCopy(img_msg, sensor_msgs::image_encodings::TYPE_8UC1);
     } catch (cv_bridge::Exception& e) {
-      ROS_ERROR("cv_bridge exception: %s", e.what());
+      RCLCPP_ERROR(this->get_logger(), "cv_bridge exception: %s", e.what());
       return;
     }
     cv_ptr->image.copyTo(img_);
 
     // Timing
     static double last_time = 0.0;
-    double current_time = img_msg->header.stamp.toSec();
+    double current_time = img_msg->header.stamp.sec;
 
     // Pyramid
     pyr_.computeFromImage(img_,true);
@@ -176,7 +176,8 @@ class FeatureTrackerNode{
       }
     }
     const double t2 = (double) cv::getTickCount();
-    ROS_INFO_STREAM(" Matching " << fsm_.getValidCount() << " patches (" << (t2-t1)/cv::getTickFrequency()*1000 << " ms)");
+    RCLCPP_INFO_STREAM(this->get_logger(),
+      " Matching " << fsm_.getValidCount() << " patches (" << (t2-t1)/cv::getTickFrequency()*1000 << " ms)");
     MultilevelPatch<nLevels_,patchSize_> mp;
     for(unsigned int i=0;i<numPatchesPlot;i++){
       if(fsm_.isValid_[i+10]){
@@ -212,7 +213,7 @@ class FeatureTrackerNode{
         }
       }
     }
-    ROS_INFO_STREAM(" Pruned " << prune_count << " features");
+    RCLCPP_INFO_STREAM(this->get_logger(), "Pruned " << prune_count << " tracked features");
 
     // Extract feature patches
     // Extract new MultilevelPatchFeature%s at the current tracked feature positions.
@@ -229,21 +230,21 @@ class FeatureTrackerNode{
     // Get new features, if there are too little valid MultilevelPatchFeature%s in the MultilevelPatchSet.
     if(fsm_.getValidCount() < min_feature_count_){
       FeatureCoordinatesVec candidates;
-      ROS_INFO_STREAM(" Adding keypoints");
+      RCLCPP_INFO_STREAM(this->get_logger()," Adding keypoints");
       const double t1 = (double) cv::getTickCount();
       for(int l=l1;l<=l2;l++){
         pyr_.detectFastCorners(candidates,l,detectionThreshold);
       }
       const double t2 = (double) cv::getTickCount();
-      ROS_INFO_STREAM(" == Detected " << candidates.size() << " on levels " << l1 << "-" << l2 << " (" << (t2-t1)/cv::getTickFrequency()*1000 << " ms)");
+      RCLCPP_INFO_STREAM(this->get_logger()," == Detected " << candidates.size() << " on levels " << l1 << "-" << l2 << " (" << (t2-t1)/cv::getTickFrequency()*1000 << " ms)");
 //      pruneCandidates(fsm_,candidates,0);
       const double t3 = (double) cv::getTickCount();
-//      ROS_INFO_STREAM(" == Selected " << candidates.size() << " candidates (" << (t3-t2)/cv::getTickFrequency()*1000 << " ms)");
+//      RCLCPP_INFO_STREAM(this->get_logger()," == Selected " << candidates.size() << " candidates (" << (t3-t2)/cv::getTickFrequency()*1000 << " ms)");
       std::unordered_set<unsigned int> newSet = fsm_.addBestCandidates( candidates,pyr_,0,current_time,
                                                                         l1,l2,max_feature_count_,nDetectionBuckets_, scoreDetectionExponent_,
                                                                         penaltyDistance_, zeroDistancePenalty_,true,0.0);
       const double t4 = (double) cv::getTickCount();
-      ROS_INFO_STREAM(" == Got " << fsm_.getValidCount() << " after adding " << newSet.size() << " features (" << (t4-t3)/cv::getTickFrequency()*1000 << " ms)");
+      RCLCPP_INFO_STREAM(this->get_logger()," == Got " << fsm_.getValidCount() << " after adding " << newSet.size() << " features (" << (t4-t3)/cv::getTickFrequency()*1000 << " ms)");
       for(auto it = newSet.begin();it != newSet.end();++it){
         fsm_.features_[*it].log_previous_ = *(fsm_.features_[*it].mpCoordinates_);
         for(int j=0;j<nCam_;j++){
