@@ -28,10 +28,10 @@
   <depend>rosbag2_cpp</depend>
   <depend>rosbag2_storage</depend>
   <depend>tf</depend>
+  <depend>rovio_interfaces</depend>
   <depend>rosbag</depend>
   <depend>yaml_cpp_catkin</depend>
-  <build_depend>rosidl_default_generators</build_depend>
-  <exec_depend>rosidl_default_runtime</exec_depend>
-  <member_of_group>rosidl_interface_packages</member_of_group>
-
+ <export>
+ <build_type>ament_cmake</build_type>
+ </export>
 </package>

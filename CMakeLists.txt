@@ -40,7 +40,6 @@ find_package(visualization_msgs REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(tf2 REQUIRED)
-find_package(rosidl_default_generators REQUIRED)
 find_package(rosbag2_cpp REQUIRED)
 find_package(rosbag2_storage REQUIRED)
 # Optional visualization dependencies
@@ -55,12 +54,7 @@ endif()
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(YamlCpp REQUIRED yaml-cpp>=0.5)
 
-# --- ROS 2 Interface generation ---
-rosidl_generate_interfaces(${PROJECT_NAME}
-		"srv/SrvResetToPose.srv"
-		DEPENDENCIES geometry_msgs
-)
-
+find_package(rovio_interfaces REQUIRED)
 ament_export_dependencies(rosidl_default_runtime)
 
 # --- Includes ---
@@ -93,6 +87,7 @@ ament_target_dependencies(${PROJECT_NAME}_lib
 		visualization_msgs
 		rosbag2_cpp
 		rosbag2_storage
+		rovio_interfaces
 )
 
 target_link_libraries(${PROJECT_NAME}_lib
@@ -105,7 +100,7 @@ target_link_libraries(${PROJECT_NAME}_lib
 
 # --- Executables ---
 add_executable(rovio_node src/rovio_node.cpp)
-ament_target_dependencies(rovio_node rclcpp)
+ament_target_dependencies(rovio_node rclcpp rovio_interfaces)
 target_link_libraries(rovio_node ${PROJECT_NAME}_lib)
 
 add_executable(rovio_rosbag_loader src/rovio_rosbag_loader.cpp)
@@ -116,9 +111,6 @@ add_executable(feature_tracker_node src/feature_tracker_node.cpp)
 ament_target_dependencies(feature_tracker_node rclcpp)
 target_link_libraries(feature_tracker_node ${PROJECT_NAME}_lib)
 
-rosidl_target_interfaces(rovio_node ${PROJECT_NAME} "rosidl_typesupport_cpp")
-rosidl_target_interfaces(rovio_rosbag_loader ${PROJECT_NAME} "rosidl_typesupport_cpp")
-rosidl_target_interfaces(feature_tracker_node ${PROJECT_NAME} "rosidl_typesupport_cpp")
 
 # --- Install ---
 install(TARGETS
@@ -132,6 +124,9 @@ install(TARGETS
 install(DIRECTORY include/
 		DESTINATION include/
 )
+
+install(DIRECTORY launch/
+		DESTINATION share/${PROJECT_NAME}/launch)
 
 # --- Export for downstream packages ---
 ament_export_include_directories(include)
