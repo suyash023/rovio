@@ -197,7 +197,7 @@ class RovioNode : public rclcpp::Node {
         featureOutputReadableCov_((int)(FeatureOutputReadable::D_), (int)(FeatureOutputReadable::D_))
   {
 #ifndef NDEBUG
-    ROS_WARN("====================== Debug Mode ======================");
+    RCLCPP_WARN(this->get_logger(),"====================== Debug Mode ======================");
 #endif
     mpImgUpdate_ = &std::get<0>(mpFilter_->mUpdates_);
     mpPoseUpdate_ = &std::get<1>(mpFilter_->mUpdates_);
