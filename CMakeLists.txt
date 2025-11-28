@@ -127,6 +127,8 @@ install(DIRECTORY include/
 
 install(DIRECTORY launch/
 		DESTINATION share/${PROJECT_NAME}/launch)
+install(DIRECTORY cfg/
+		DESTINATION share/${PROJECT_NAME}/cfg)
 
 # --- Export for downstream packages ---
 ament_export_include_directories(include)
