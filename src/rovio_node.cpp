@@ -102,6 +102,21 @@ void readCameraConfig(std::shared_ptr<mtFilter> mpFilter,
   }
 }
 
+/**
+ * @brief Function to declare the camera config parameters
+ * @param ROVIO node share ptr
+ * @return none
+ */
+void declareParameters(std::shared_ptr<rovio::RovioNode<mtFilter>> node)
+{
+  for (unsigned int camID = 0; camID < nCam_; ++camID) {
+    std::string camera_config;
+    node->declare_parameter("camera" + std::to_string(camID)
+                            + "_config","");
+  }
+  node->declare_parameter("filter_config", "");
+}
+
 int main(int argc, char** argv){
   rclcpp::init(argc, argv);
   //ros::NodeHandle nh;
@@ -121,8 +136,10 @@ int main(int argc, char** argv){
 
   std::shared_ptr<rovio::RovioNode<rovio::RovioFilter<rovio::FilterState<25, 4, 6, 1, 0>>>> node;
   node = std::make_shared<rovio::RovioNode<mtFilter>>(mpFilter);
+  declareParameters(node);
   node->get_parameter("filter_config", filter_config);
   mpFilter->readFromInfo(filter_config);
+  std::cout << "Filter config: " << filter_config << std::endl;
   readCameraConfig(mpFilter, node);
   node->makeTest();
 #ifdef MAKE_SCENE
