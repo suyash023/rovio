@@ -97,6 +97,7 @@ void readCameraConfig(std::shared_ptr<mtFilter> mpFilter,
     std::string camera_config;
     if (node->get_parameter("camera" + std::to_string(camID)
                             + "_config", camera_config)) {
+      std::cout << "Camera config: " << camera_config << std::endl;
       mpFilter->cameraCalibrationFile_[camID] = camera_config;
     }
   }
@@ -148,7 +149,8 @@ int main(int argc, char** argv){
   std::string mFSFileName = rootdir + "/shaders/shader.fs";
   mRovioScene.initScene(argc,argv,mVSFileName,mFSFileName,mpFilter);
   mRovioScene.setIdleFunction(idleFunc);
-  mRovioScene.addKeyboardCB('r',[&rovioNode]() mutable {rovioNode.requestReset();});
+  mR
+  ovioScene.addKeyboardCB('r',[&rovioNode]() mutable {rovioNode.requestReset();});
   glutMainLoop();
 #else
   rclcpp::spin(node);
