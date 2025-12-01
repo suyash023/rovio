@@ -26,8 +26,8 @@ def generate_launch_description():
         parameters=[
             {
                 'filter_config': LaunchConfiguration('filter_config'),
-                'cam0_config': LaunchConfiguration('cam0_config'),
-                'cam1_config': LaunchConfiguration('cam1_config'),
+                'camera0_config': LaunchConfiguration('cam0_config'),
+                'camera1_config': LaunchConfiguration('cam1_config'),
             }
         ]
     )
