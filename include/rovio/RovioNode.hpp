@@ -214,9 +214,9 @@ class RovioNode : public rclcpp::Node {
     // Subscribe topics
     subImu_ = this->create_subscription<sensor_msgs::msg::Imu>("imu0", 1000,
       std::bind(&RovioNode::imuCallback, this, std::placeholders::_1));
-    subImg0_ = this->create_subscription<sensor_msgs::msg::Image>("cam0/image_raw", 10,
+    subImg0_ = this->create_subscription<sensor_msgs::msg::Image>("cam0/image_raw", 100,
               std::bind(&RovioNode::imgCallback0, this, std::placeholders::_1));
-    subImg1_ = this->create_subscription<sensor_msgs::msg::Image>("cam1/image_raw",10,
+    subImg1_ = this->create_subscription<sensor_msgs::msg::Image>("cam1/image_raw",100,
                 std::bind(&RovioNode::imgCallback1, this, std::placeholders::_1));
     //subGroundtruth_ = this->create_subscription<geometry_msgs::msg::PoseStamped>("pose", 1000,
      //             std::bind(&RovioNode::groundtruthCallback, this, std::placeholders::_1));
@@ -234,6 +234,7 @@ class RovioNode : public rclcpp::Node {
     //Figure out transforms later
     //pubTransform_ = nh_.advertise<geometry_msgs::TransformStamped>("rovio/transform", 1);
     //pubOdometry_ = nh_.advertise<nav_msgs::Odometry>("rovio/odometry", 1);
+    pubOdometry_ = this->create_publisher<nav_msgs::msg::Odometry>("rovio/odometry", 1);
     pubPoseWithCovStamped_ = this->create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>(
                               "rovio/pose_with_covariance_stamped", 1);
     pubPcl_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("rovio/pcl",
@@ -476,41 +477,6 @@ class RovioNode : public rclcpp::Node {
     delete mpTestFilterState;
   }
 
-  /** \brief Callback for IMU-Messages. Adds IMU measurements (as prediction measurements) to the filter.
-   */
-  void imuCallback(const sensor_msgs::msg::Imu::ConstPtr& imu_msg){
-    std::lock_guard<std::mutex> lock(m_filter_);
-    predictionMeas_.template get<mtPredictionMeas::_acc>() = Eigen::Vector3d(imu_msg->linear_acceleration.x,imu_msg->linear_acceleration.y,imu_msg->linear_acceleration.z);
-    predictionMeas_.template get<mtPredictionMeas::_gyr>() = Eigen::Vector3d(imu_msg->angular_velocity.x,imu_msg->angular_velocity.y,imu_msg->angular_velocity.z);
-    if(init_state_.isInitialized()){
-      mpFilter_->addPredictionMeas(predictionMeas_,imu_msg->header.stamp.sec);
-      updateAndPublish();
-    } else {
-      switch(init_state_.state_) {
-        case FilterInitializationState::State::WaitForInitExternalPose: {
-          std::cout << "-- Filter: Initializing using external pose ..." << std::endl;
-          mpFilter_->resetWithPose(init_state_.WrWM_, init_state_.qMW_, imu_msg->header.stamp.sec);
-          break;
-        }
-        case FilterInitializationState::State::WaitForInitUsingAccel: {
-          std::cout << "-- Filter: Initializing using accel. measurement ..." << std::endl;
-          mpFilter_->resetWithAccelerometer(predictionMeas_.template get<mtPredictionMeas::_acc>(),
-            imu_msg->header.stamp.sec);
-          break;
-        }
-        default: {
-          std::cout << "Unhandeld initialization type." << std::endl;
-          abort();
-          break;
-        }
-      }
-
-      std::cout << std::setprecision(12);
-      std::cout << "-- Filter: Initialized at t = " << imu_msg->header.stamp.sec << std::endl;
-      init_state_.state_ = FilterInitializationState::State::Initialized;
-    }
-  }
-
   /** \brief Image callback for the camera with ID 0
    *
    * @param img - Image message.
@@ -548,7 +514,8 @@ class RovioNode : public rclcpp::Node {
     cv::Mat cv_img;
     cv_ptr->image.copyTo(cv_img);
     if(init_state_.isInitialized() && !cv_img.empty()){
-      double msgTime = img->header.stamp.sec;
+      double msgTime =  rclcpp::Time(img->header.stamp).nanoseconds() * 1e-9;
+      std::cout << "msgTime = " << msgTime << std::endl;
       if(msgTime != imgUpdateMeas_.template get<mtImgMeas::_aux>().imgTime_){
         for(int i=0;i<mtState::nCam_;i++){
           if(imgUpdateMeas_.template get<mtImgMeas::_aux>().isValidPyr_[i]){
@@ -563,6 +530,7 @@ class RovioNode : public rclcpp::Node {
       if(imgUpdateMeas_.template get<mtImgMeas::_aux>().areAllValid()){
         mpFilter_->template addUpdateMeas<0>(imgUpdateMeas_,msgTime);
         imgUpdateMeas_.template get<mtImgMeas::_aux>().reset(msgTime);
+        std::cout << "Doing update and publish" << std::endl;
         updateAndPublish();
       }
     }
@@ -600,9 +568,46 @@ class RovioNode : public rclcpp::Node {
 
       const Eigen::Matrix<double,6,6> measuredCov = Eigen::Map<const Eigen::Matrix<double,6,6,Eigen::RowMajor>>(odometry->pose.covariance.data());
       poseUpdateMeas_.measuredCov() = measuredCov;
-
-      mpFilter_->template addUpdateMeas<1>(poseUpdateMeas_,odometry->header.stamp.sec+mpPoseUpdate_->timeOffset_);
+      double odomStamp = rclcpp::Time(odometry->header.stamp).nanoseconds() * 1e-9;
+      mpFilter_->template addUpdateMeas<1>(poseUpdateMeas_,odomStamp+mpPoseUpdate_->timeOffset_);
       updateAndPublish();
+    }
+  }
+
+  /** \brief Callback for IMU-Messages. Adds IMU measurements (as prediction measurements) to the filter.
+   */
+  void imuCallback(const sensor_msgs::msg::Imu::ConstPtr& imu_msg){
+    std::lock_guard<std::mutex> lock(m_filter_);
+    predictionMeas_.template get<mtPredictionMeas::_acc>() = Eigen::Vector3d(imu_msg->linear_acceleration.x,imu_msg->linear_acceleration.y,imu_msg->linear_acceleration.z);
+    predictionMeas_.template get<mtPredictionMeas::_gyr>() = Eigen::Vector3d(imu_msg->angular_velocity.x,imu_msg->angular_velocity.y,imu_msg->angular_velocity.z);
+    if(init_state_.isInitialized()){
+      std::cout.precision(24);
+      std::cout << "Timestamp: " <<  rclcpp::Time(imu_msg->header.stamp).nanoseconds() * 1e-9;
+      mpFilter_->addPredictionMeas(predictionMeas_, rclcpp::Time(imu_msg->header.stamp).nanoseconds() * 1e-9);
+      updateAndPublish();
+    } else {
+      switch(init_state_.state_) {
+      case FilterInitializationState::State::WaitForInitExternalPose: {
+        std::cout << "-- Filter: Initializing using external pose ..." << std::endl;
+        mpFilter_->resetWithPose(init_state_.WrWM_, init_state_.qMW_, rclcpp::Time(imu_msg->header.stamp).nanoseconds() * 1e-9);
+        break;
+      }
+      case FilterInitializationState::State::WaitForInitUsingAccel: {
+        std::cout << "-- Filter: Initializing using accel. measurement ..." << std::endl;
+        mpFilter_->resetWithAccelerometer(predictionMeas_.template get<mtPredictionMeas::_acc>(),
+                                           rclcpp::Time(imu_msg->header.stamp).nanoseconds() * 1e-9);
+        break;
+      }
+      default: {
+        std::cout << "Unhandeld initialization type." << std::endl;
+        abort();
+        break;
+      }
+      }
+
+      std::cout << std::setprecision(24);
+      std::cout << "-- Filter: Initialized at t = " << rclcpp::Time(imu_msg->header.stamp).nanoseconds() * 1e-9 << std::endl;
+      init_state_.state_ = FilterInitializationState::State::Initialized;
     }
   }
 
@@ -615,7 +620,8 @@ class RovioNode : public rclcpp::Node {
     if(init_state_.isInitialized()){
       Eigen::Vector3d AvM(velocity->twist.linear.x,velocity->twist.linear.y,velocity->twist.linear.z);
       velocityUpdateMeas_.vel() = AvM;
-      mpFilter_->template addUpdateMeas<2>(velocityUpdateMeas_,velocity->header.stamp.sec);
+      double velStamp = rclcpp::Time(velocity->header.stamp).nanoseconds() * 1e-9;
+      mpFilter_->template addUpdateMeas<2>(velocityUpdateMeas_,velStamp);
       updateAndPublish();
     }
   }
@@ -698,10 +704,13 @@ class RovioNode : public rclcpp::Node {
       if(mpFilter_->safe_.t_ > oldSafeTime){ // Publish only if something changed
         for(int i=0;i<mtState::nCam_;i++){
           if(!mpFilter_->safe_.img_[i].empty() && mpImgUpdate_->doFrameVisualisation_){
+            std::cout << "Showing image:" << std::endl;
+            cv::namedWindow("Tracker" + std::to_string(i),cv::WINDOW_NORMAL);
             cv::imshow("Tracker" + std::to_string(i), mpFilter_->safe_.img_[i]);
             cv::waitKey(3);
           }
         }
+        std::cout << "After showign image" << std::endl;
         if(!mpFilter_->safe_.patchDrawing_.empty() && mpImgUpdate_->visualizePatches_){
           cv::imshow("Patches", mpFilter_->safe_.patchDrawing_);
           cv::waitKey(3);
@@ -710,10 +719,11 @@ class RovioNode : public rclcpp::Node {
         // Obtain the save filter state.
         mtFilterState& filterState = mpFilter_->safe_;
 	mtState& state = mpFilter_->safe_.state_;
+        std::cout << "Updating multi camera extrinsics" << std::endl;
         state.updateMultiCameraExtrinsics(&mpFilter_->multiCamera_);
         MXD& cov = mpFilter_->safe_.cov_;
         imuOutputCT_.transformState(state,imuOutput_);
-
+        std::cout << "After transforming state" << std::endl;
         // Cout verbose for pose measurements
         if(mpImgUpdate_->verbose_){
           if(mpPoseUpdate_->inertialPoseIndex_ >=0){
@@ -763,8 +773,10 @@ class RovioNode : public rclcpp::Node {
         // }
 
         // Publish Odometry
+        std::cout << "Publishing odometry" << std::endl;
         if(pubOdometry_->get_subscription_count() > 0 || forceOdometryPublishing_){
           // Compute covariance of output
+          std::cout << "Getting output covariance" << std::endl;
           imuOutputCT_.transformCovMat(state,cov,imuOutputCov_);
           odometryMsg_.header.stamp = rclcpp::Time(mpFilter_->safe_.t_);
           odometryMsg_.pose.pose.position.x = imuOutput_.WrWB()(0);
@@ -774,6 +786,7 @@ class RovioNode : public rclcpp::Node {
           odometryMsg_.pose.pose.orientation.x = imuOutput_.qBW().x();
           odometryMsg_.pose.pose.orientation.y = imuOutput_.qBW().y();
           odometryMsg_.pose.pose.orientation.z = imuOutput_.qBW().z();
+          std::cout << "Getting covariance message" << std::endl;
           for(unsigned int i=0;i<6;i++){
             unsigned int ind1 = mtOutput::template getId<mtOutput::_pos>()+i;
             if(i>=3) ind1 = mtOutput::template getId<mtOutput::_att>()+i-3;
@@ -800,7 +813,7 @@ class RovioNode : public rclcpp::Node {
           }
           pubOdometry_->publish(odometryMsg_);
         }
-
+        std::cout << "Publsing pose with covariance" << std::endl;
         if(pubPoseWithCovStamped_->get_subscription_count() > 0 || forcePoseWithCovariancePublishing_){
           // Compute covariance of output
           imuOutputCT_.transformCovMat(state,cov,imuOutputCov_);
@@ -861,6 +874,7 @@ class RovioNode : public rclcpp::Node {
         // }
 
         // Publish Extrinsics
+        std::cout << "Publshing extrinsics" << std::endl;
         for(int camID=0;camID<mtState::nCam_;camID++){
           if(pubExtrinsics_[camID]->get_subscription_count() > 0 || forceExtrinsicsPublishing_){
             extrinsicsMsg_[camID].header.stamp = rclcpp::Time(mpFilter_->safe_.t_);
@@ -885,6 +899,7 @@ class RovioNode : public rclcpp::Node {
         }
 
         // Publish IMU biases
+        std::cout << "Publishing biases" << std::endl;
         if(pubImuBias_->get_subscription_count() > 0 || forceImuBiasPublishing_){
           imuBiasMsg_.header.stamp = rclcpp::Time(mpFilter_->safe_.t_);
           imuBiasMsg_.angular_velocity.x = state.gyb()(0);
@@ -905,7 +920,7 @@ class RovioNode : public rclcpp::Node {
           }
           pubImuBias_->publish(imuBiasMsg_);
         }
-
+        std::cout << "publishinng point cloud message" << std::endl;
         // PointCloud message.
         if(pubPcl_->get_subscription_count() > 0 || pubMarkers_->get_subscription_count() > 0 || forcePclPublishing_ || forceMarkersPublishing_){
           pclMsg_.header.stamp = rclcpp::Time(mpFilter_->safe_.t_);
@@ -1012,6 +1027,7 @@ class RovioNode : public rclcpp::Node {
           pubPcl_->publish(pclMsg_);
           pubMarkers_->publish(markerMsg_);
         }
+        std::cout << "Publishing patches" << std::endl;
         if(pubPatch_->get_subscription_count() > 0 || forcePatchPublishing_){
           patchMsg_.header.stamp = rclcpp::Time(mpFilter_->safe_.t_);
           int offset = 0;
