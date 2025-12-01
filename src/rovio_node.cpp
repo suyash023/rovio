@@ -131,7 +131,6 @@ int main(int argc, char** argv){
   std::shared_ptr<mtFilter> mpFilter(new mtFilter);
   std::string filter_config;
 
-  mpFilter->refreshProperties();
 
   // Node
 
@@ -142,6 +141,8 @@ int main(int argc, char** argv){
   mpFilter->readFromInfo(filter_config);
   std::cout << "Filter config: " << filter_config << std::endl;
   readCameraConfig(mpFilter, node);
+  mpFilter->refreshProperties();
+
   node->makeTest();
 #ifdef MAKE_SCENE
   // Scene
