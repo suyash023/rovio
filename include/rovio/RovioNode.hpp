@@ -705,9 +705,9 @@ class RovioNode : public rclcpp::Node {
         for(int i=0;i<mtState::nCam_;i++){
           if(!mpFilter_->safe_.img_[i].empty() && mpImgUpdate_->doFrameVisualisation_){
             std::cout << "Showing image:" << std::endl;
-            cv::namedWindow("Tracker" + std::to_string(i),cv::WINDOW_NORMAL);
+            cv::namedWindow("Tracker" + std::to_string(i),cv::WINDOW_AUTOSIZE);
             cv::imshow("Tracker" + std::to_string(i), mpFilter_->safe_.img_[i]);
-            cv::waitKey(3);
+            cv::waitKey(1);
           }
         }
         std::cout << "After showign image" << std::endl;
