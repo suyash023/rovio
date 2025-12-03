@@ -17,9 +17,9 @@ def generate_launch_description():
     cam1_config_arg = DeclareLaunchArgument('cam1_config',default_value=cam1_config)
     bag_file_path = "/home/suby/Desktop/Robotics_projects/open_source/rovio_ws/datasets/machine_hall/MH_01_easy/MH_01_easy_ros2/MH_01_easy_ros2.db3"
     bag_file_arg = DeclareLaunchArgument('rosbag_filename', default_value=bag_file_path)
-    imu_topic_arg = DeclareLaunchArgument('imu_topic', default_value='/imu0')
-    cam0_topic_arg = DeclareLaunchArgument('cam0_topic', default='/cam0/image_raw')
-    cam1_topic_arg = DeclareLaunchArgument('cam1_topic', default="/cam1/image_raw")
+    imu_topic_arg = DeclareLaunchArgument('imu_topic_name', default_value='/imu0')
+    cam0_topic_arg = DeclareLaunchArgument('cam0_topic_name', default='/cam0/image_raw')
+    cam1_topic_arg = DeclareLaunchArgument('cam1_topic_name', default="/cam1/image_raw")
     print("cam1 config: ", cam1_config)
     print("cam0 config: ", cam0_config)
     print("filter config: ", config_file)
