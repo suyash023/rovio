@@ -133,6 +133,7 @@ void declareParameters(std::shared_ptr<rovio::RovioNode<mtFilter>> node) {
   node->declare_parameter("reset_trigger", 0);
 }
 
+
 /**
  * @brief Function to read the camera calibration parameters. File path are ros params of node.
  * @param mpFilter
@@ -209,6 +210,7 @@ int main(int argc, char** argv){
   stream.imbue(std::locale(std::locale::classic(), facet));
   stream << rovioNode->get_clock()->now().seconds() << "_" << nMax_ << "_" << nLevels_ << "_" << patchSize_ << "_" << nCam_  << "_" << nPose_;
   std::string filename_out = file_path + "/rovio/" + stream.str();
+  rovioNode->declare_parameter("filename_out", filename_out);
   rovioNode->get_parameter("filename_out", filename_out);
   std::string rosbag_filename_out = filename_out + ".bag";
   std::string info_filename_out = filename_out + ".info";
@@ -218,14 +220,18 @@ int main(int argc, char** argv){
   // Copy info
   std::ifstream  src(filter_config, std::ios::binary);
   std::ofstream  dst(info_filename_out,   std::ios::binary);
+  std::ofstream  dst(info_filename_out,   std::ios::binary);
   dst << src.rdbuf();
 
   std::vector<std::string> topics;
   std::string imu_topic_name = "/imu0";
+  rovioNode->declare_parameter("imu_topic_name", imu_topic_name);
   rovioNode->get_parameter("imu_topic_name", imu_topic_name);
   std::string cam0_topic_name = "/cam0/image_raw";
+  rovioNode->declare_parameter("cam0_topic_name", cam0_topic_name);
   rovioNode->get_parameter("cam0_topic_name", cam0_topic_name);
   std::string cam1_topic_name = "/cam1/image_raw";
+  rovioNode->declare_parameter("cam1_topic_name", cam1_topic_name);
   rovioNode->get_parameter("cam1_topic_name", cam1_topic_name);
   std::string odometry_topic_name = rovioNode->pubOdometry_->get_topic_name();
   std::string transform_topic_name = rovioNode->pubTransform_->get_topic_name();
