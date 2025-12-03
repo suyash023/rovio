@@ -109,6 +109,49 @@ rclcpp::SerializedMessage serializeMessage(T msgToSerialize ) {
 }
 
 
+
+/**
+ * @brief Function to declare the camera config parameters
+ * @param ROVIO node share ptr
+ * @return none
+ */
+void declareParameters(std::shared_ptr<rovio::RovioNode<mtFilter>> node) {
+  for (unsigned int camID = 0; camID < nCam_; ++camID) {
+    std::string camera_config;
+    node->declare_parameter("camera" + std::to_string(camID)
+                            + "_config","");
+  }
+  node->declare_parameter("filter_config", "");
+  node->declare_parameter("record_odometry", node->forceOdometryPublishing_);
+  node->declare_parameter("record_pose_with_covariance_stamped", node->forcePoseWithCovariancePublishing_);
+  node->declare_parameter("record_transform", node->forceTransformPublishing_);
+  node->declare_parameter("record_extrinsics", node->forceExtrinsicsPublishing_);
+  node->declare_parameter("record_imu_bias", node->forceImuBiasPublishing_);
+  node->declare_parameter("record_pcl", node->forcePclPublishing_);
+  node->declare_parameter("record_markers", node->forceMarkersPublishing_);
+  node->declare_parameter("record_patch", node->forcePatchPublishing_);
+  node->declare_parameter("reset_trigger", 0);
+}
+
+/**
+ * @brief Function to read the camera calibration parameters. File path are ros params of node.
+ * @param mpFilter
+ * @param node
+ * @return None
+ */
+void readCameraConfig(std::shared_ptr<mtFilter> mpFilter,
+                      std::shared_ptr<rovio::RovioNode<mtFilter>> node) {
+  for (unsigned int camID = 0; camID < nCam_; ++camID) {
+    std::string camera_config;
+    if (node->get_parameter("camera" + std::to_string(camID)
+                            + "_config", camera_config)) {
+      std::cout << "Camera config: " << camera_config << std::endl;
+      mpFilter->cameraCalibrationFile_[camID] = camera_config;
+                            }
+  }
+}
+
+
 int main(int argc, char** argv){
   rclcpp::init(argc, argv);
   std::string filter_config;
@@ -116,17 +159,12 @@ int main(int argc, char** argv){
   // Filter
   std::shared_ptr<mtFilter> mpFilter(new mtFilter);
   auto rovioNode = std::make_shared<rovio::RovioNode<mtFilter>>(mpFilter);
+  declareParameters(rovioNode);
   rovioNode->get_parameter("filter_config", filter_config);
   mpFilter->readFromInfo(filter_config);
 
   // Force the camera calibration paths to the ones from ROS parameters.
-  for (unsigned int camID = 0; camID < nCam_; ++camID) {
-    std::string camera_config;
-    if (rovioNode->get_parameter("camera" + std::to_string(camID)
-                            + "_config", camera_config)) {
-      mpFilter->cameraCalibrationFile_[camID] = camera_config;
-    }
-  }
+  readCameraConfig(mpFilter, rovioNode);
   mpFilter->refreshProperties();
   
   rovioNode->makeTest();
