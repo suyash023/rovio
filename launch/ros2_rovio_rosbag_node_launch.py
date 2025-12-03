@@ -42,6 +42,6 @@ def generate_launch_description():
         filter_config_arg,
         cam0_config_arg,
         cam1_config_arg,
-        rosbag_filename,
+        bag_file_arg,
         rovio_node
     ])

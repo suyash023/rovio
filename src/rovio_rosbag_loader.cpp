@@ -192,6 +192,7 @@ int main(int argc, char** argv){
 
   rosbag2_cpp::Reader bagIn;
   std::string rosbag_filename = "dataset.bag";
+  rovioNode->declare_parameter("rosbag_filename", rosbag_filename);
   rovioNode->get_parameter("rosbag_filename", rosbag_filename);
   bagIn.open(rosbag_filename);
 
@@ -219,7 +220,6 @@ int main(int argc, char** argv){
 
   // Copy info
   std::ifstream  src(filter_config, std::ios::binary);
-  std::ofstream  dst(info_filename_out,   std::ios::binary);
   std::ofstream  dst(info_filename_out,   std::ios::binary);
   dst << src.rdbuf();
 
