@@ -130,7 +130,7 @@ void declareParameters(std::shared_ptr<rovio::RovioNode<mtFilter>> node) {
   node->declare_parameter("record_pcl", node->forcePclPublishing_);
   node->declare_parameter("record_markers", node->forceMarkersPublishing_);
   node->declare_parameter("record_patch", node->forcePatchPublishing_);
-  node->declare_parameter("reset_trigger", 0);
+  node->declare_parameter("reset_trigger", 0.0);
 }
 
 

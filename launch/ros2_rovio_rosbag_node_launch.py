@@ -18,15 +18,15 @@ def generate_launch_description():
     bag_file_path = "/home/suby/Desktop/Robotics_projects/open_source/rovio_ws/datasets/machine_hall/MH_01_easy/MH_01_easy_ros2/MH_01_easy_ros2.db3"
     bag_file_arg = DeclareLaunchArgument('rosbag_filename', default_value=bag_file_path)
     imu_topic_arg = DeclareLaunchArgument('imu_topic_name', default_value='/imu0')
-    cam0_topic_arg = DeclareLaunchArgument('cam0_topic_name', default='/cam0/image_raw')
-    cam1_topic_arg = DeclareLaunchArgument('cam1_topic_name', default="/cam1/image_raw")
+    cam0_topic_arg = DeclareLaunchArgument('cam0_topic_name', default_value='/cam0/image_raw')
+    cam1_topic_arg = DeclareLaunchArgument('cam1_topic_name', default_value="/cam1/image_raw")
     print("cam1 config: ", cam1_config)
     print("cam0 config: ", cam0_config)
     print("filter config: ", config_file)
     print("basg file path: ", bag_file_path)
     rovio_node = Node(
         package='rovio',
-        executable='rovio_node',
+        executable='rovio_rosbag_loader',
         name='rovio',
         output='screen',
         parameters=[
