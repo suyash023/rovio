@@ -146,7 +146,6 @@ void readCameraConfig(std::shared_ptr<mtFilter> mpFilter,
     std::string camera_config;
     if (node->get_parameter("camera" + std::to_string(camID)
                             + "_config", camera_config)) {
-      std::cout << "Camera config: " << camera_config << std::endl;
       mpFilter->cameraCalibrationFile_[camID] = camera_config;
                             }
   }
@@ -194,7 +193,6 @@ int main(int argc, char** argv){
   std::string rosbag_filename = "dataset.bag";
   rovioNode->declare_parameter("rosbag_filename", rosbag_filename);
   rovioNode->get_parameter("rosbag_filename", rosbag_filename);
-  std::cout << "opening ros bag file" << std::endl;
   bagIn.open(rosbag_filename);
 
   rosbag2_cpp::Writer bagOut;
@@ -210,41 +208,32 @@ int main(int argc, char** argv){
   boost::posix_time::time_facet* facet = new boost::posix_time::time_facet();
   facet->format("%Y-%m-%d-%H-%M-%S");
   stream.imbue(std::locale(std::locale::classic(), facet));
-  std::cout << "Getting clock:"  << std::endl;
   stream << rovioNode->get_clock()->now().seconds() << "_" << nMax_ << "_" << nLevels_ << "_" << patchSize_ << "_" << nCam_  << "_" << nPose_;
   std::string filename_out = file_path + "/rovio/" + stream.str();
   rovioNode->declare_parameter("filename_out", filename_out);
   rovioNode->get_parameter("filename_out", filename_out);
   std::string rosbag_filename_out = filename_out + ".bag";
   std::string info_filename_out = filename_out + ".info";
-  std::cout << "Storing output to: " << rosbag_filename_out << std::endl;
-  std::cout << "opening bag file to write" << std::endl;
   bagOut.open(rosbag_filename_out);
 
   // Copy info
-  std::cout << "copy info" << std::endl;
   std::ifstream  src(filter_config, std::ios::binary);
   std::ofstream  dst(info_filename_out,   std::ios::binary);
   dst << src.rdbuf();
-  std::cout << "done copy" << std::endl;
   std::vector<std::string> topics;
   std::string imu_topic_name = "/imu0";
-  std::cout << "Declaring imu topic name" << std::endl;
   rovioNode->declare_parameter("imu_topic_name", imu_topic_name);
   rovioNode->get_parameter("imu_topic_name", imu_topic_name);
-  std::cout << "Done decalring topic name" << std::endl;
   std::string cam0_topic_name = "/cam0/image_raw";
   rovioNode->declare_parameter("cam0_topic_name", cam0_topic_name);
   rovioNode->get_parameter("cam0_topic_name", cam0_topic_name);
   std::string cam1_topic_name = "/cam1/image_raw";
   rovioNode->declare_parameter("cam1_topic_name", cam1_topic_name);
   rovioNode->get_parameter("cam1_topic_name", cam1_topic_name);
-  std::cout << "Getting topic name for odometry" << std::endl;
   std::string odometry_topic_name = rovioNode->pubOdometry_->get_topic_name();
   //std::string transform_topic_name = rovioNode->pubTransform_->get_topic_name();
   std::string extrinsics_topic_name[mtFilter::mtState::nCam_];
   for(int camID=0;camID<mtFilter::mtState::nCam_;camID++){
-    std::cout << "Getting topic name" << std::endl;
     extrinsics_topic_name[camID] = rovioNode->pubExtrinsics_[camID]->get_topic_name();
   }
   std::string imu_bias_topic_name = rovioNode->pubImuBias_->get_topic_name();
@@ -259,7 +248,6 @@ int main(int argc, char** argv){
 
   bool isTriggerInitialized = false;
   double lastTriggerTime = 0.0;
-  std::cout << "Reading bag file " << std::endl;
   while (bagIn.has_next()) {
     auto serializedMsg = bagIn.read_next();
     if(serializedMsg->topic_name == imu_topic_name){
