@@ -515,7 +515,6 @@ class RovioNode : public rclcpp::Node {
     cv_ptr->image.copyTo(cv_img);
     if(init_state_.isInitialized() && !cv_img.empty()){
       double msgTime =  rclcpp::Time(img->header.stamp).nanoseconds() * 1e-9;
-      std::cout << "msgTime = " << msgTime << std::endl;
       if(msgTime != imgUpdateMeas_.template get<mtImgMeas::_aux>().imgTime_){
         for(int i=0;i<mtState::nCam_;i++){
           if(imgUpdateMeas_.template get<mtImgMeas::_aux>().isValidPyr_[i]){
@@ -530,7 +529,6 @@ class RovioNode : public rclcpp::Node {
       if(imgUpdateMeas_.template get<mtImgMeas::_aux>().areAllValid()){
         mpFilter_->template addUpdateMeas<0>(imgUpdateMeas_,msgTime);
         imgUpdateMeas_.template get<mtImgMeas::_aux>().reset(msgTime);
-        std::cout << "Doing update and publish" << std::endl;
         updateAndPublish();
       }
     }
@@ -581,8 +579,6 @@ class RovioNode : public rclcpp::Node {
     predictionMeas_.template get<mtPredictionMeas::_acc>() = Eigen::Vector3d(imu_msg->linear_acceleration.x,imu_msg->linear_acceleration.y,imu_msg->linear_acceleration.z);
     predictionMeas_.template get<mtPredictionMeas::_gyr>() = Eigen::Vector3d(imu_msg->angular_velocity.x,imu_msg->angular_velocity.y,imu_msg->angular_velocity.z);
     if(init_state_.isInitialized()){
-      std::cout.precision(24);
-      std::cout << "Timestamp: " <<  rclcpp::Time(imu_msg->header.stamp).nanoseconds() * 1e-9;
       mpFilter_->addPredictionMeas(predictionMeas_, rclcpp::Time(imu_msg->header.stamp).nanoseconds() * 1e-9);
       updateAndPublish();
     } else {
@@ -704,13 +700,11 @@ class RovioNode : public rclcpp::Node {
       if(mpFilter_->safe_.t_ > oldSafeTime){ // Publish only if something changed
         for(int i=0;i<mtState::nCam_;i++){
           if(!mpFilter_->safe_.img_[i].empty() && mpImgUpdate_->doFrameVisualisation_){
-            std::cout << "Showing image:" << std::endl;
             cv::namedWindow("Tracker" + std::to_string(i),cv::WINDOW_AUTOSIZE);
             cv::imshow("Tracker" + std::to_string(i), mpFilter_->safe_.img_[i]);
             cv::waitKey(1);
           }
         }
-        std::cout << "After showign image" << std::endl;
         if(!mpFilter_->safe_.patchDrawing_.empty() && mpImgUpdate_->visualizePatches_){
           cv::imshow("Patches", mpFilter_->safe_.patchDrawing_);
           cv::waitKey(3);
@@ -719,11 +713,9 @@ class RovioNode : public rclcpp::Node {
         // Obtain the save filter state.
         mtFilterState& filterState = mpFilter_->safe_;
 	mtState& state = mpFilter_->safe_.state_;
-        std::cout << "Updating multi camera extrinsics" << std::endl;
         state.updateMultiCameraExtrinsics(&mpFilter_->multiCamera_);
         MXD& cov = mpFilter_->safe_.cov_;
         imuOutputCT_.transformState(state,imuOutput_);
-        std::cout << "After transforming state" << std::endl;
         // Cout verbose for pose measurements
         if(mpImgUpdate_->verbose_){
           if(mpPoseUpdate_->inertialPoseIndex_ >=0){
@@ -773,10 +765,8 @@ class RovioNode : public rclcpp::Node {
         // }
 
         // Publish Odometry
-        std::cout << "Publishing odometry" << std::endl;
         if(pubOdometry_->get_subscription_count() > 0 || forceOdometryPublishing_){
           // Compute covariance of output
-          std::cout << "Getting output covariance" << std::endl;
           imuOutputCT_.transformCovMat(state,cov,imuOutputCov_);
           odometryMsg_.header.stamp = rclcpp::Time(mpFilter_->safe_.t_);
           odometryMsg_.pose.pose.position.x = imuOutput_.WrWB()(0);
@@ -786,7 +776,6 @@ class RovioNode : public rclcpp::Node {
           odometryMsg_.pose.pose.orientation.x = imuOutput_.qBW().x();
           odometryMsg_.pose.pose.orientation.y = imuOutput_.qBW().y();
           odometryMsg_.pose.pose.orientation.z = imuOutput_.qBW().z();
-          std::cout << "Getting covariance message" << std::endl;
           for(unsigned int i=0;i<6;i++){
             unsigned int ind1 = mtOutput::template getId<mtOutput::_pos>()+i;
             if(i>=3) ind1 = mtOutput::template getId<mtOutput::_att>()+i-3;
@@ -813,7 +802,6 @@ class RovioNode : public rclcpp::Node {
           }
           pubOdometry_->publish(odometryMsg_);
         }
-        std::cout << "Publsing pose with covariance" << std::endl;
         if(pubPoseWithCovStamped_->get_subscription_count() > 0 || forcePoseWithCovariancePublishing_){
           // Compute covariance of output
           imuOutputCT_.transformCovMat(state,cov,imuOutputCov_);
@@ -874,7 +862,6 @@ class RovioNode : public rclcpp::Node {
         // }
 
         // Publish Extrinsics
-        std::cout << "Publshing extrinsics" << std::endl;
         for(int camID=0;camID<mtState::nCam_;camID++){
           if(pubExtrinsics_[camID]->get_subscription_count() > 0 || forceExtrinsicsPublishing_){
             extrinsicsMsg_[camID].header.stamp = rclcpp::Time(mpFilter_->safe_.t_);
@@ -899,7 +886,6 @@ class RovioNode : public rclcpp::Node {
         }
 
         // Publish IMU biases
-        std::cout << "Publishing biases" << std::endl;
         if(pubImuBias_->get_subscription_count() > 0 || forceImuBiasPublishing_){
           imuBiasMsg_.header.stamp = rclcpp::Time(mpFilter_->safe_.t_);
           imuBiasMsg_.angular_velocity.x = state.gyb()(0);
@@ -920,7 +906,6 @@ class RovioNode : public rclcpp::Node {
           }
           pubImuBias_->publish(imuBiasMsg_);
         }
-        std::cout << "publishinng point cloud message" << std::endl;
         // PointCloud message.
         if(pubPcl_->get_subscription_count() > 0 || pubMarkers_->get_subscription_count() > 0 || forcePclPublishing_ || forceMarkersPublishing_){
           pclMsg_.header.stamp = rclcpp::Time(mpFilter_->safe_.t_);
@@ -1027,7 +1012,6 @@ class RovioNode : public rclcpp::Node {
           pubPcl_->publish(pclMsg_);
           pubMarkers_->publish(markerMsg_);
         }
-        std::cout << "Publishing patches" << std::endl;
         if(pubPatch_->get_subscription_count() > 0 || forcePatchPublishing_){
           patchMsg_.header.stamp = rclcpp::Time(mpFilter_->safe_.t_);
           int offset = 0;
