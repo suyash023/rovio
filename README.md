@@ -1,5 +1,46 @@
 # README #
 
+## History and Present ##
+
+This repo originally belonged to ETH Zurich under the MIT BSD Licence.
+This fork of the original repo is now maintained by [robotboy_023](https://github.com/suyash023).
+Maintaining the spirit from the original authors the licensing of this repo is also under MIT BSD.
+
+As a Robotics Engineer I have worked extensively on ROVIO for years. I have gotten it to work on various resource constrained compute platforms and also made several modifications to improve its accuracy.
+ROVIO is a relatively simple framework that can work quite well on low compute platforms on Robots and provide good accuracy **if tuned properly**.
+I would like to leverage my years of experience to help out the community and improve ROVIO as a package offering.
+I am happy to collaborate to improve ROVIO and you are more than welcome to suggest modifications, new features, improvement ideas or bug-fixes.
+For this you can open an issue in the issues section of this repo.
+
+If you would like to buy me some Chai (tea) to fuel the ongoing improvement work, please visit this [link](https://www.patreon.com/c/robotboy023/posts)
+
+## Modifications and Roadmap ##
+
+- [x] Support for ROS2
+  - [ ] ros2 parameters in yaml file
+  - [ ] Publishing of odometry as transforms
+  - [ ] Reset service calls 
+- [ ] Scripts
+  - [ ] Install dependencies
+  - [ ] Install EUROC dataset
+  - [ ] Build ROVIO
+  - [ ] Run ROVIO on all EUROC datasets
+- [ ] Scripts to generate ATE and RPE metrics.
+- [ ] Docker support and docker image.
+- [ ] Optimizations from TU Delft.
+- [ ] Optimizations from MAPLAB.
+- [ ] Health monitoring cleanup.
+- [ ] Lidar sensor fusion.
+- [ ] Use stronger features first for update (sorting).
+- [ ] Read calibration files directly from Kalibr and opencv.
+- [ ] Sliding Window bundle Adjustment using GTSAM.
+- [ ] Rolling Shutter Compensation.
+
+## README from Original Authors ##
+
+Below is the README from original authors. Modifications have been made to the instruction to build and compile ROVIO
+in accordance with the current working state.
+
 This repository contains the ROVIO (Robust Visual Inertial Odometry) framework. The code is open-source (BSD License). Please remember that it is strongly coupled to on-going research and thus some parts are not fully mature yet. Furthermore, the code will also be subject to changes in the future which could include greater re-factoring of some parts.
 
 Video: https://youtu.be/ZMAISVy-6ao
