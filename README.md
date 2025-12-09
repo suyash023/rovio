@@ -20,7 +20,7 @@ I also offer troubleshooting and tuning services for your specific setup for a n
 ## Modifications and Roadmap ##
 
 - [x] Support for ROS2
-- [x] CI/CD pipeline for building 
+- [] CI/CD pipeline for building 
   - [ ] ros2 parameters in yaml file
   - [ ] Publishing of odometry as transforms
   - [ ] Reset service calls
@@ -118,4 +118,4 @@ colcon build rovio --cmake-args -DCMAKE_BUILD_TYPE=Release -DMAKE_SCENE=ON
 
 ### ROVIO on your robot ###
 
-To run ROVIO on your custom camera-IMU setup please refer to this (documentation)[doc/CustomSetup.md]
+To run ROVIO on your custom camera-IMU setup please refer to this [documentation](doc/CustomSetup.md)
