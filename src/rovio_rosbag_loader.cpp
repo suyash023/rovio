@@ -43,6 +43,7 @@
 #include <boost/date_time/posix_time/posix_time_io.hpp>
 
 #include "rovio/RovioNode.hpp"
+#include "geometry_msgs/msg/point_stamped.hpp"
 #define foreach BOOST_FOREACH
 
 #ifdef ROVIO_NMAXFEATURE
@@ -214,6 +215,10 @@ int main(int argc, char** argv){
   rovioNode->get_parameter("filename_out", filename_out);
   std::string rosbag_filename_out = filename_out + ".bag";
   std::string info_filename_out = filename_out + ".info";
+  std::string gt_topic_name = "/gt";
+  rovioNode->declare_parameter("gt_topic_name", gt_topic_name);
+  rovioNode->get_parameter("gt_topic_name",gt_topic_name);
+  std::cout << "GT topic: " << gt_topic_name << std::endl;
   bagOut.open(rosbag_filename_out);
 
   // Copy info
@@ -265,6 +270,10 @@ int main(int argc, char** argv){
       sensor_msgs::msg::Image::ConstPtr imgMsg2Ptr = std::make_shared<sensor_msgs::msg::Image>(imgMsg2);
       if (imgMsg2Ptr != NULL) rovioNode->imgCallback1(imgMsg2Ptr);
     }
+	if(serializedMsg->topic_name == gt_topic_name) {
+		geometry_msgs::msg::Point gtPose = deserializeMessage<geometry_msgs::msg::Point>(serializedMsg);
+		bagOut.write(gtPose, gt_topic_name, rovioNode->get_clock()->now());
+	}
     rclcpp::spin_some(rovioNode);
 
     if(rovioNode->gotFirstMessages_){

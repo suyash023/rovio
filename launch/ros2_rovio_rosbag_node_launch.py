@@ -20,6 +20,7 @@ def generate_launch_description():
     imu_topic_arg = DeclareLaunchArgument('imu_topic_name', default_value='/imu0')
     cam0_topic_arg = DeclareLaunchArgument('cam0_topic_name', default_value='/cam0/image_raw')
     cam1_topic_arg = DeclareLaunchArgument('cam1_topic_name', default_value="/cam1/image_raw")
+    gt_topic_arg = DeclareLaunchArgument('gt_topic_name', default_value="/leica/position")
     print("cam1 config: ", cam1_config)
     print("cam0 config: ", cam0_config)
     print("filter config: ", config_file)
@@ -34,7 +35,11 @@ def generate_launch_description():
                 'filter_config': LaunchConfiguration('filter_config'),
                 'camera0_config': LaunchConfiguration('cam0_config'),
                 'camera1_config': LaunchConfiguration('cam1_config'),
-                'rosbag_filename' : LaunchConfiguration('rosbag_filename')
+                'rosbag_filename' : LaunchConfiguration('rosbag_filename'),
+                'cam0_topic_name' : LaunchConfiguration('cam0_topic_name'),
+                'cam1_topic_name' : LaunchConfiguration('cam1_topic_name'),
+                'imu_topic_name' : LaunchConfiguration('imu_topic_name'),
+                'gt_topic_name' : LaunchConfiguration('gt_topic_name')
             }
         ]
     )
@@ -43,5 +48,9 @@ def generate_launch_description():
         cam0_config_arg,
         cam1_config_arg,
         bag_file_arg,
+        cam0_topic_arg,
+        cam1_topic_arg,
+        imu_topic_arg,
+        gt_topic_arg,
         rovio_node
     ])
