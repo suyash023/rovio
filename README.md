@@ -9,40 +9,13 @@ Maintaining the spirit from the original authors the licensing of this repo is a
 As a Robotics Engineer I have worked extensively on ROVIO for years. I have gotten it to work on various resource constrained compute platforms and also made several modifications to improve its accuracy.
 ROVIO is a relatively simple framework that can work quite well on low compute platforms on **all kinds of** Robots and provide accurate odometry **if tuned properly**.
 I would like to leverage my years of experience to help out the community and improve ROVIO as a package offering.
-I am happy to collaborate to improve ROVIO and you are more than welcome to suggest modifications, new features, improvement ideas or bug-fixes.
+I am happy to collaborate to improve ROVIO. You are more than welcome to suggest modifications, new features, improvement ideas or bug-fixes.
 For this you can open an issue in the issues section of this repo.
 
 If you would like to buy me some Chai (tea) to fuel the ongoing improvement work, please hit the sponsor button
 
 I also offer troubleshooting and tuning services for your specific setup for a nominal fee. Please send an email or contact me through issues section to collaborate on this.
 
-
-## Modifications and Roadmap ##
-
-- [x] Support for ROS2
-- [] CI/CD pipeline for building 
-  - [ ] ros2 parameters in yaml file
-  - [ ] Publishing of odometry as transforms
-  - [ ] Reset service calls
-- [ ] Time-offset addition to IMU data.
-- [ ] Update wiki
-  - [ ] Sensor Calibration.
-  - [ ] ROVIO parameter breakdown.
-- [ ] Scripts
-  - [ ] Install dependencies
-  - [ ] Install EUROC dataset
-  - [ ] Build ROVIO
-  - [ ] Run ROVIO on all EUROC datasets
-- [ ] Scripts to generate ATE and RPE metrics.
-- [ ] Docker support and docker image.
-- [ ] Optimizations from TU Delft.
-- [ ] Optimizations from MAPLAB.
-- [ ] Health monitoring cleanup.
-- [ ] Lidar sensor fusion.
-- [ ] Use stronger features first for update (sorting).
-- [ ] Read calibration files directly from Kalibr and opencv.
-- [ ] Sliding Window bundle Adjustment using GTSAM.
-- [ ] Rolling Shutter Compensation.
 
 ## Modified README ##
 
@@ -96,7 +69,7 @@ colcon build rovio --cmake-args -DCMAKE_BUILD_TYPE=Release
 ```
 
 ### Install with opengl scene ###
-Addtional dependencies:
+Additional dependencies:
 * opengl
 * glut
 * glew
@@ -119,3 +92,30 @@ colcon build rovio --cmake-args -DCMAKE_BUILD_TYPE=Release -DMAKE_SCENE=ON
 ### ROVIO on your robot ###
 
 To run ROVIO on your custom camera-IMU setup please refer to this [documentation](doc/CustomSetup.md)
+
+## Modifications and Roadmap ##
+
+- [x] Support for ROS2
+- [] CI/CD pipeline for building
+  - [ ] ros2 parameters in yaml file
+  - [ ] Publishing of odometry as transforms
+  - [ ] Reset service calls
+- [ ] Time-offset addition to IMU data.
+- [ ] Update wiki
+  - [ ] Sensor Calibration.
+  - [ ] ROVIO parameter breakdown.
+- [ ] Scripts
+  - [ ] Install dependencies
+  - [ ] Install EUROC dataset
+  - [ ] Build ROVIO
+  - [ ] Run ROVIO on all EUROC datasets
+- [ ] Scripts to generate ATE and RPE metrics.
+- [ ] Docker support and docker image.
+- [ ] Optimizations from TU Delft.
+- [ ] Optimizations from MAPLAB.
+- [ ] Health monitoring cleanup.
+- [ ] Lidar sensor fusion.
+- [ ] Use stronger features first for update (sorting).
+- [ ] Read calibration files directly from Kalibr and opencv.
+- [ ] Sliding Window bundle Adjustment using GTSAM.
+- [ ] Rolling Shutter Compensation.
