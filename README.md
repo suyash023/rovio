@@ -49,7 +49,6 @@ Steps:
 
 * Make a ros2 workspace in a desired (home here by default `~/`) folder:
 ```
-#!command
 mkdir -p ~/rovio_ws/src
 ```
 * clone rovio and all the dependencies:
@@ -63,7 +62,6 @@ git submodule update --init -- recursive
 
 * Build rovio
 ```
-#!command
 cd ~/rovio_ws/
 colcon build rovio --cmake-args -DCMAKE_BUILD_TYPE=Release
 ```
@@ -96,7 +94,8 @@ To run ROVIO on your custom camera-IMU setup please refer to this [documentation
 ## Modifications and Roadmap ##
 
 - [x] Support for ROS2
-- [] CI/CD pipeline for building
+- [ ] ROVIO viz in ROS2 images
+- [ ] CI/CD pipeline for building
   - [ ] ros2 parameters in yaml file
   - [ ] Publishing of odometry as transforms
   - [ ] Reset service calls
@@ -109,7 +108,7 @@ To run ROVIO on your custom camera-IMU setup please refer to this [documentation
   - [ ] Install EUROC dataset
   - [ ] Build ROVIO
   - [ ] Run ROVIO on all EUROC datasets
-- [ ] Scripts to generate ATE and RPE metrics.
+  - [ ] Scripts to generate ATE and RPE metrics.
 - [ ] Docker support and docker image.
 - [ ] Optimizations from TU Delft.
 - [ ] Optimizations from MAPLAB.
