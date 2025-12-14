@@ -693,6 +693,9 @@ class RovioNode : public rclcpp::Node {
       timing_T += (t2-t1)/cv::getTickFrequency()*1000;
       timing_C += c1-c2;
       bool plotTiming = false;
+      std::function<rclcpp::Time(double)> doubleToStamp = [](double stamp) {
+        return rclcpp::Time(static_cast<int64_t>(stamp*1e9));
+      };
       if(plotTiming){
         RCLCPP_INFO_STREAM(this->get_logger(),
           " == Filter Update: " << (t2-t1)/cv::getTickFrequency()*1000 << " ms for processing " << c1-c2 << " images, average: " << timing_T/timing_C);
@@ -768,7 +771,7 @@ class RovioNode : public rclcpp::Node {
         if(pubOdometry_->get_subscription_count() > 0 || forceOdometryPublishing_){
           // Compute covariance of output
           imuOutputCT_.transformCovMat(state,cov,imuOutputCov_);
-          odometryMsg_.header.stamp = rclcpp::Time(mpFilter_->safe_.t_);
+          odometryMsg_.header.stamp = doubleToStamp(mpFilter_->safe_.t_);
           odometryMsg_.pose.pose.position.x = imuOutput_.WrWB()(0);
           odometryMsg_.pose.pose.position.y = imuOutput_.WrWB()(1);
           odometryMsg_.pose.pose.position.z = imuOutput_.WrWB()(2);
@@ -806,7 +809,7 @@ class RovioNode : public rclcpp::Node {
           // Compute covariance of output
           imuOutputCT_.transformCovMat(state,cov,imuOutputCov_);
 
-          estimatedPoseWithCovarianceStampedMsg_.header.stamp = rclcpp::Time(mpFilter_->safe_.t_);
+          estimatedPoseWithCovarianceStampedMsg_.header.stamp = doubleToStamp(mpFilter_->safe_.t_);
           estimatedPoseWithCovarianceStampedMsg_.pose.pose.position.x = imuOutput_.WrWB()(0);
           estimatedPoseWithCovarianceStampedMsg_.pose.pose.position.y = imuOutput_.WrWB()(1);
           estimatedPoseWithCovarianceStampedMsg_.pose.pose.position.z = imuOutput_.WrWB()(2);
@@ -864,7 +867,7 @@ class RovioNode : public rclcpp::Node {
         // Publish Extrinsics
         for(int camID=0;camID<mtState::nCam_;camID++){
           if(pubExtrinsics_[camID]->get_subscription_count() > 0 || forceExtrinsicsPublishing_){
-            extrinsicsMsg_[camID].header.stamp = rclcpp::Time(mpFilter_->safe_.t_);
+            extrinsicsMsg_[camID].header.stamp = doubleToStamp(mpFilter_->safe_.t_);
             extrinsicsMsg_[camID].pose.pose.position.x = state.MrMC(camID)(0);
             extrinsicsMsg_[camID].pose.pose.position.y = state.MrMC(camID)(1);
             extrinsicsMsg_[camID].pose.pose.position.z = state.MrMC(camID)(2);
@@ -887,7 +890,7 @@ class RovioNode : public rclcpp::Node {
 
         // Publish IMU biases
         if(pubImuBias_->get_subscription_count() > 0 || forceImuBiasPublishing_){
-          imuBiasMsg_.header.stamp = rclcpp::Time(mpFilter_->safe_.t_);
+          imuBiasMsg_.header.stamp = doubleToStamp(mpFilter_->safe_.t_);
           imuBiasMsg_.angular_velocity.x = state.gyb()(0);
           imuBiasMsg_.angular_velocity.y = state.gyb()(1);
           imuBiasMsg_.angular_velocity.z = state.gyb()(2);
@@ -908,8 +911,8 @@ class RovioNode : public rclcpp::Node {
         }
         // PointCloud message.
         if(pubPcl_->get_subscription_count() > 0 || pubMarkers_->get_subscription_count() > 0 || forcePclPublishing_ || forceMarkersPublishing_){
-          pclMsg_.header.stamp = rclcpp::Time(mpFilter_->safe_.t_);
-          markerMsg_.header.stamp = rclcpp::Time(mpFilter_->safe_.t_);
+          pclMsg_.header.stamp = doubleToStamp(mpFilter_->safe_.t_);
+          markerMsg_.header.stamp = doubleToStamp(mpFilter_->safe_.t_);
           markerMsg_.points.clear();
           float badPoint = std::numeric_limits<float>::quiet_NaN();  // Invalid point.
           int offset = 0;
@@ -1013,7 +1016,7 @@ class RovioNode : public rclcpp::Node {
           pubMarkers_->publish(markerMsg_);
         }
         if(pubPatch_->get_subscription_count() > 0 || forcePatchPublishing_){
-          patchMsg_.header.stamp = rclcpp::Time(mpFilter_->safe_.t_);
+          patchMsg_.header.stamp = doubleToStamp(mpFilter_->safe_.t_);
           int offset = 0;
           for (unsigned int i=0;i<mtState::nMax_; i++, offset += patchMsg_.point_step) {
             if(filterState.fsm_.isValid_[i]){
