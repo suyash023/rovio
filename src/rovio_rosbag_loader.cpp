@@ -44,6 +44,7 @@
 
 #include "rovio/RovioNode.hpp"
 #include "geometry_msgs/msg/point_stamped.hpp"
+#include "geometry_msgs/msg/pose_stamped.hpp"
 #define foreach BOOST_FOREACH
 
 #ifdef ROVIO_NMAXFEATURE
@@ -109,6 +110,25 @@ rclcpp::SerializedMessage serializeMessage(T msgToSerialize ) {
   return serializedMsg;
 }
 
+
+/**
+ * @brief Function to convert the Point stamped message to the pose stamped message
+ * @param PointStamped message reference
+ * @param PoseStamped message reference
+ * @return None
+ */
+void pointToPose(const geometry_msgs::msg::PointStamped pointMsg,
+                geometry_msgs::msg::PoseStamped::SharedPtr poseMsg) {
+  poseMsg->header.stamp = pointMsg.header.stamp;
+  poseMsg->header.frame_id = pointMsg.header.frame_id;
+  poseMsg->pose.position.x = pointMsg.point.x;
+  poseMsg->pose.position.y = pointMsg.point.y;
+  poseMsg->pose.position.z = pointMsg.point.z;
+  poseMsg->pose.orientation.x = 0;
+  poseMsg->pose.orientation.y = 0;
+  poseMsg->pose.orientation.z = 0;
+  poseMsg->pose.orientation.w = 1;
+}
 
 
 /**
@@ -271,8 +291,10 @@ int main(int argc, char** argv){
       if (imgMsg2Ptr != NULL) rovioNode->imgCallback1(imgMsg2Ptr);
     }
 	if(serializedMsg->topic_name == gt_topic_name) {
-		geometry_msgs::msg::Point gtPose = deserializeMessage<geometry_msgs::msg::Point>(serializedMsg);
-		bagOut.write(gtPose, gt_topic_name, rovioNode->get_clock()->now());
+		geometry_msgs::msg::PointStamped gtPose = deserializeMessage<geometry_msgs::msg::PointStamped>(serializedMsg);
+    geometry_msgs::msg::PoseStamped::SharedPtr poseMsgPtr = std::make_shared<geometry_msgs::msg::PoseStamped>();
+	  pointToPose(gtPose, poseMsgPtr);
+	  bagOut.write(*poseMsgPtr, gt_topic_name, rovioNode->get_clock()->now());
 	}
     rclcpp::spin_some(rovioNode);
 
