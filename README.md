@@ -1,26 +1,48 @@
-# README #
+# ROVIO - Robust Omnidirectional Visual Inertial Odometry #
 
+## TL;DR
+
+ROVIO is a lightweight, research-grade Visual-Inertial Odometry (VIO) framework
+that performs well on resource-constrained platforms when properly tuned.
+
+This fork provides:
+- Full ROS 2 (Humble) support
+- Simplified build and evaluation scripts
+- Dataset automation (EUROC)
+- Ongoing maintenance and performance improvements
+
+If you want a fast start:
+```bash
+mkdir -p ~/rovio_ws/src
+cd ~/rovio_ws/src
+git clone git@github.com:suyash023/rovio.git
+git clone git@github.com:suyash023/rovio_interfaces.git
+source rovio/scripts/rovio_commands.sh
+cd ~/rovio_ws && build_rovio
+```
 ## History and Present ##
 
-This repo originally belonged to ETH Zurich under the MIT BSD Licence.
-This fork of the original repo is now maintained by [robotboy_023](https://github.com/suyash023).
-Maintaining the spirit from the original authors the licensing of this repo is also under MIT BSD.
+This repository originates from **ETH Zurich** and is released under the **BSD (MIT-style) License**. This fork is actively maintained by **[robotboy_023](https://github.com/suyash023)**, preserving both the spirit and licensing of the original work.
+ROVIO is a lightweight yet powerful VIO framework that performs exceptionally well on **resource‑constrained platforms** when properly tuned. It has been demonstrated across **a wide variety of robotic platforms**, delivering accurate and robust odometry even under tight compute budgets (see ICRA 2018 reference below).
+I have worked extensively with ROVIO for several years—deploying it on constrained hardware, tuning it for diverse sensors, and contributing modifications that significantly improve accuracy and robustness. This fork aims to consolidate that experience to improve:
 
-As a Robotics Engineer I have worked extensively on ROVIO for years. I have gotten it to work on various resource constrained compute platforms and also made several modifications to improve its accuracy.
-ROVIO is a relatively simple framework that can work quite well on low compute platforms on **all kinds of** Robots and provide accurate odometry **if tuned properly**.
-I would like to leverage my years of experience to help out the community and improve ROVIO as a package offering.
-I am happy to collaborate to improve ROVIO. You are more than welcome to suggest modifications, new features, improvement ideas or bug-fixes.
-For this you can open an issue in the issues section of this repo.
+- Adoption and usability
+- Scalability and maintainability
+- Accuracy and computational efficiency
 
-If you would like to buy me some Chai (tea) to fuel the ongoing improvement work, please hit the sponsor button
+## Who This Repository Is For
 
-I also offer troubleshooting and tuning services for your specific setup for a nominal fee. Please send an email or contact me through issues section to collaborate on this.
+This fork is intended for:
+- Robotics engineers deploying VIO on real hardware
+- Researchers benchmarking or extending ROVIO
+- ROS 2 users seeking a maintained ROVIO workflow
 
+## Maintainer notes and additions ##
 
-## Modified README ##
-
-Below readme contains modification from the original readme with additional information. Modifications have been made to the instructions for easier setup and to build and compile ROVIO
-in accordance with the current working state.
+This README is a modified and extended version of the original documentation. Updates include:
+* Simplified setup instructions
+* ROS 2–aligned build and usage steps
+* Scripted workflows for datasets, evaluation, and benchmarking
 
 This repository contains the ROVIO (Robust Visual Inertial Odometry) framework. The code is open-source (BSD License). Please remember that it is strongly coupled to on-going research and thus some parts are not fully mature yet. Furthermore, the code will also be subject to changes in the future which could include greater re-factoring of some parts.
 
@@ -29,9 +51,10 @@ Video: https://youtu.be/ZMAISVy-6ao
 Papers:
 * http://dx.doi.org/10.3929/ethz-a-010566547 (IROS 2015)
 * http://dx.doi.org/10.1177/0278364917728574 (IJRR 2017)
+* https://rpg.ifi.uzh.ch/docs/ICRA18_Delmerico.pdf (Computational efficiency of ROVIO)
+* https://www.worldscientific.com/doi/10.1142/S2301385024410012 (Improving ROVIO  2023)
 
 Please also have a look at the wiki: https://github.com/ethz-asl/rovio/wiki
-
 
 ## Software Dependencies ##
 
@@ -43,8 +66,21 @@ Please also have a look at the wiki: https://github.com/ethz-asl/rovio/wiki
 * rovio_interfaces : This is a package needed to use services and custom messages for ROVIO. ROS2 now mandates that messages and services be maintained in a separate package.
 
 ## Building ROVIO ##
-Building has been tested with ROS2 humble, on Ubuntu 22.04.
 
+All builds have been tested on **Ubuntu 22.04 (64 bit) + ROS 2 Humble**.
+
+A helper script, `rovio_commands.sh`, provides a convenient CLI for:
+* Installing dependencies
+* Building ROVIO
+* Installing datasets
+* Converting EUROC datasets (ROS 1 → ROS 2)
+* Running ROVIO on EUROC
+* Installing evaluation tools
+* Evaluating results (ATE / RPE)
+
+```
+source ~/rovio_ws/src/scripts/rovio_commands.sh
+```
 Steps:
 
 * Make a ros2 workspace in a desired (home here by default `~/`) folder:
@@ -61,10 +97,17 @@ git submodule update --init -- recursive
 ```
 
 * Build rovio
+
+Source the script for command line utilities:
+```
+source ~/rovio_ws/src/rovio/scripts/rovio_commands.sh
+```
+Next, navigate to the rovio_ws directory and enter command to build rovio
 ```
 cd ~/rovio_ws/
-colcon build rovio --cmake-args -DCMAKE_BUILD_TYPE=Release
+build_rovio
 ```
+Internally, colcon build command is run to execute the building process.
 
 ### Install with opengl scene ###
 Additional dependencies:
@@ -74,47 +117,106 @@ Additional dependencies:
 
 Steps to build:
 * Install additional dependencies:
+Make sure the `rovio_commands.sh` is sourced first and then execute the following command
 ```
-sudo apt-get update
-sudo apt-get install freeglut3-dev libglew-dev
+install_scene_dependencies
 ```
 * Follow the same instruction as above to create a ros2 workspace for rovio, on the build step execute the following command instead.
+Navigate to the `~/rovio_ws/` directory.
 ```
-#!command
+build_rovio_scene
+```
+### Installing EUROC datasets ###
 
-colcon build rovio --cmake-args -DCMAKE_BUILD_TYPE=Release -DMAKE_SCENE=ON
+The EUROC MAV Dataset is commonly used for benchmarking VIO algorithms. 
+More details: https://ethz-asl.github.io/datasets/euroc-mav/
+This repository defaults to the Machine Hall sequences.
+Make sure the script `rovio_commands.sh` is sourced and then execute the following command:
 ```
+cd ~/rovio_ws/
+install_euroc_datsets
+```
+> Dataset downloads may take time depending on your network—perfect time for coffee ☕
+The datasets get installed in the `~/rovio_ws/datsets` folder.
+These datasets are in ROS1 format. To convert them in ROS2 format, navigate to the rovio_ws directory and enter the following command:
+```
+cd ~/rovio_ws/
+convert_euroc_datasets
+```
+Converted datasets are saved as `[dataset_name]_ros2` in respective dataset folders.
 
 ### ROVIO on Euroc datasets ###
+
+By default, the config files provided in `cfg` folders have calibration and config parameters for the EUROC dataset.
+To run ROVIO on the EUROC dataset source the `rovio_commands.sh` script and execute the following command:
+```
+cd ~/rovio_ws/
+run_rovio_euroc
+```
+On running this command ROVIO will be executed on all ros2 folders in the `~/rovio_ws/datasets/machine_hall` folder.
+A vizualization window appears during execution.
+
+### Evaluating ROVIO on EUROC datasets ###
+
+To evaluate ROVIO on EUROC dataset the tool [evo](https://michaelgrupp.github.io/evo/) is used. It computes the [ATE and RPE metrics](https://docs.openvins.com/eval-metrics.html) trajectory error metrics.
+With the `rovio_commands.sh` script sourced, execute the follwing command to install evo:
+```
+install_evaluation_dependencies
+```
+To perform the evaluation execute the following command:
+```
+evaluate_rovio_euroc
+```
+This computes the metrics and plots and saves the data in the `rovio` folder in each of the datasets folder.
+It also generates a csv file for each dataset that contains the metrics for the results in the respective results folder.
 
 ### ROVIO on your robot ###
 
 To run ROVIO on your custom camera-IMU setup please refer to this [documentation](doc/CustomSetup.md)
 
-## Modifications and Roadmap ##
+## Modifications & Roadmap
 
-- [x] Support for ROS2
-- [ ] ROVIO viz in ROS2 images
-- [ ] CI/CD pipeline for building
-  - [ ] ros2 parameters in yaml file
-  - [ ] Publishing of odometry as transforms
-  - [ ] Reset service calls
-- [ ] Time-offset addition to IMU data.
-- [ ] Update wiki
-  - [ ] Sensor Calibration.
-  - [ ] ROVIO parameter breakdown.
-- [ ] Scripts
-  - [ ] Install dependencies
-  - [ ] Install EUROC dataset
-  - [ ] Build ROVIO
-  - [ ] Run ROVIO on all EUROC datasets
-  - [ ] Scripts to generate ATE and RPE metrics.
-- [ ] Docker support and docker image.
-- [ ] Optimizations from TU Delft.
-- [ ] Optimizations from MAPLAB.
-- [ ] Health monitoring cleanup.
-- [ ] Lidar sensor fusion.
-- [ ] Use stronger features first for update (sorting).
-- [ ] Read calibration files directly from Kalibr and opencv.
-- [ ] Sliding Window bundle Adjustment using GTSAM.
-- [ ] Rolling Shutter Compensation.
+### Core Features
+- [x] ROS 2 support
+- [ ] Service calls
+- [ ] ROS 2 image‑based visualization
+
+### Infrastructure
+- [ ] CI/CD pipeline
+- [ ] ROS 2 YAML parameter support
+- [ ] TF publishing
+- [ ] Reset services
+- [ ] JSON files for config
+
+### Algorithmic Improvements
+- [ ] IMU time‑offset handling
+- [ ] Strong‑feature prioritization
+- [ ] Rolling‑shutter compensation
+- [ ] LiDAR sensor fusion
+- [ ] Sliding‑window BA (GTSAM)
+- [ ] Vanishing point detection and fusion
+
+### Evaluation & Tooling
+- [ ] RPE support in `rovio_commands.sh`
+- [ ] Cumulative ATE/RPE across datasets
+
+### Documentation
+- [ ] Wiki updates
+- [ ] Sensor calibration guide
+- [ ] Parameter breakdown
+
+### Deployment
+- [ ] Docker support
+- [ ] Prebuilt Docker images
+
+### Research Integrations
+- [ ] TU Delft optimizations
+- [ ] MAPLAB optimizations
+- [ ] Health monitoring cleanup
+
+## Support & Collaboration
+
+If you need help tuning ROVIO for a custom platform or sensor setup,
+limited consulting and troubleshooting support is available. Please contact me via [email](suyashyeotikar@gmail.com) or post in issues section.
+
+Community contributions, issue reports, and pull requests are always welcome.
