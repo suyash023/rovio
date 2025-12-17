@@ -77,9 +77,9 @@ typedef rovio::RovioFilter<rovio::FilterState<nMax_,nLevels_,patchSize_,nCam_,nP
 
 #ifdef MAKE_SCENE
 static rovio::RovioScene<mtFilter> mRovioScene;
-
+static std::shared_ptr<rovio::RovioNode<mtFilter>> filterNode;
 void idleFunc(){
-  rclpp::spinOnce();
+  rclcpp::spin_some(filterNode);
   mRovioScene.drawScene(mRovioScene.mpFilter_->safe_);
 }
 #endif
@@ -146,12 +146,16 @@ int main(int argc, char** argv){
   node->makeTest();
 #ifdef MAKE_SCENE
   // Scene
-  std::string mVSFileName = rootdir + "/shaders/shader.vs";
-  std::string mFSFileName = rootdir + "/shaders/shader.fs";
+  std::string mVSFileName;
+  node->declare_parameter("shaders_mVSFileName", "");
+  node->get_parameter("shaders_mVSFileName", mVSFileName);
+  std::string mFSFileName;
+  node->declare_parameter("shaders_mFSFileName", "");
+  node->get_parameter("shaders_mFSFileName", mFSFileName);
+  filterNode = node;
   mRovioScene.initScene(argc,argv,mVSFileName,mFSFileName,mpFilter);
   mRovioScene.setIdleFunction(idleFunc);
-  mR
-  ovioScene.addKeyboardCB('r',[&rovioNode]() mutable {rovioNode.requestReset();});
+  mRovioScene.addKeyboardCB('r',[node]() mutable {node->requestReset();});
   glutMainLoop();
 #else
   rclcpp::spin(node);

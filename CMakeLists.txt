@@ -12,7 +12,7 @@ set(ROVIO_NCAM 1 CACHE STRING "Number of enabled cameras")
 set(ROVIO_NLEVELS 4 CACHE STRING "Number of image levels for the features")
 set(ROVIO_PATCHSIZE 6 CACHE STRING "Size of patch (edge length in pixels)")
 set(ROVIO_NPOSE 0 CACHE STRING "Additional estimated poses for external pose measurements")
-
+set(MAKE_SCENE OFF CACHE STRING "Open GL based 3d visualisation")
 add_definitions(
 		-DROVIO_NMAXFEATURE=${ROVIO_NMAXFEATURE}
 		-DROVIO_NCAM=${ROVIO_NCAM}
@@ -45,6 +45,7 @@ find_package(rosbag2_storage REQUIRED)
 # Optional visualization dependencies
 if(MAKE_SCENE)
 	message(STATUS "Building ROVIO with OpenGL Scene Visualization")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DMAKE_SCENE=1")
 	find_package(GLEW REQUIRED)
 	find_package(GLUT REQUIRED)
 	find_package(OpenGL REQUIRED)
@@ -89,14 +90,18 @@ ament_target_dependencies(${PROJECT_NAME}_lib
 		rosbag2_storage
 		rovio_interfaces
 )
-
 target_link_libraries(${PROJECT_NAME}_lib
 		${YamlCpp_LIBRARIES}
 		${OpenCV_LIBRARIES}
-		${OPENGL_LIBRARIES}
-		${GLUT_LIBRARIES}
-		${GLEW_LIBRARIES}
 )
+
+if(MAKE_SCENE)
+	target_link_libraries(${PROJECT_NAME}_lib
+			OpenGL::GL
+			GLUT::GLUT
+			GLEW::GLEW
+	)
+endif()
 
 # --- Executables ---
 add_executable(rovio_node src/rovio_node.cpp)
