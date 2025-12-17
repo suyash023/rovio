@@ -75,14 +75,6 @@ static constexpr int nPose_ = 0; // Additional pose states.
 
 typedef rovio::RovioFilter<rovio::FilterState<nMax_,nLevels_,patchSize_,nCam_,nPose_>> mtFilter;
 
-#ifdef MAKE_SCENE
-static rovio::RovioScene<mtFilter> mRovioScene;
-static std::shared_ptr<rovio::RovioNode<mtFilter>> filterNode;
-void idleFunc(){
-  rclcpp::spin_some(filterNode);
-  mRovioScene.drawScene(mRovioScene.mpFilter_->safe_);
-}
-#endif
 
 
 /**
@@ -120,20 +112,11 @@ void declareParameters(std::shared_ptr<rovio::RovioNode<mtFilter>> node)
 
 int main(int argc, char** argv){
   rclcpp::init(argc, argv);
-  //ros::NodeHandle nh;
-  //ros::NodeHandle nh_private("~");
-  //std::string rootdir = ros::package::getPath("rovio"); // Leaks memory
-  //std::string filter_config = rootdir + "/cfg/rovio.info";
-
-  //nh_private.param("filter_config", filter_config, filter_config);
-
   // Filter
   std::shared_ptr<mtFilter> mpFilter(new mtFilter);
   std::string filter_config;
 
-
   // Node
-
   std::shared_ptr<rovio::RovioNode<rovio::RovioFilter<rovio::FilterState<25, 4, 6, 1, 0>>>> node;
   node = std::make_shared<rovio::RovioNode<mtFilter>>(mpFilter);
   declareParameters(node);
@@ -142,23 +125,7 @@ int main(int argc, char** argv){
   std::cout << "Filter config: " << filter_config << std::endl;
   readCameraConfig(mpFilter, node);
   mpFilter->refreshProperties();
-
   node->makeTest();
-#ifdef MAKE_SCENE
-  // Scene
-  std::string mVSFileName;
-  node->declare_parameter("shaders_mVSFileName", "");
-  node->get_parameter("shaders_mVSFileName", mVSFileName);
-  std::string mFSFileName;
-  node->declare_parameter("shaders_mFSFileName", "");
-  node->get_parameter("shaders_mFSFileName", mFSFileName);
-  filterNode = node;
-  mRovioScene.initScene(argc,argv,mVSFileName,mFSFileName,mpFilter);
-  mRovioScene.setIdleFunction(idleFunc);
-  mRovioScene.addKeyboardCB('r',[node]() mutable {node->requestReset();});
-  glutMainLoop();
-#else
   rclcpp::spin(node);
-#endif
   return 0;
 }

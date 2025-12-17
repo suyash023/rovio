@@ -78,17 +78,17 @@ A helper script, `rovio_commands.sh`, provides a convenient CLI for:
 * Installing evaluation tools
 * Evaluating results (ATE / RPE)
 
-```
+```bash
 source ~/rovio_ws/src/scripts/rovio_commands.sh
 ```
 Steps:
 
 * Make a ros2 workspace in a desired (home here by default `~/`) folder:
-```
+```bash
 mkdir -p ~/rovio_ws/src
 ```
 * clone rovio and all the dependencies:
-```
+```bash
 cd ~/rovio_ws/src/
 git clone git@github.com:suyash023/rovio.git
 git clone git@github.com:suyash023/rovio_interfaces.git
@@ -99,47 +99,33 @@ git submodule update --init -- recursive
 * Build rovio
 
 Source the script for command line utilities:
-```
+```bash
 source ~/rovio_ws/src/rovio/scripts/rovio_commands.sh
 ```
 Next, navigate to the rovio_ws directory and enter command to build rovio
-```
+```bash
 cd ~/rovio_ws/
 build_rovio
 ```
 Internally, colcon build command is run to execute the building process.
 
-### Install with opengl scene ###
-Additional dependencies:
-* opengl
-* glut
-* glew
+>Note: Compared to the original repo Scene functionality has been removed. If needed again please open an issue
 
-Steps to build:
-* Install additional dependencies:
-Make sure the `rovio_commands.sh` is sourced first and then execute the following command
-```
-install_scene_dependencies
-```
-* Follow the same instruction as above to create a ros2 workspace for rovio, on the build step execute the following command instead.
-Navigate to the `~/rovio_ws/` directory.
-```
-build_rovio_scene
-```
+
 ### Installing EUROC datasets ###
 
 The EUROC MAV Dataset is commonly used for benchmarking VIO algorithms. 
 More details: https://ethz-asl.github.io/datasets/euroc-mav/
 This repository defaults to the Machine Hall sequences.
 Make sure the script `rovio_commands.sh` is sourced and then execute the following command:
-```
+```bash
 cd ~/rovio_ws/
 install_euroc_datsets
 ```
 > Dataset downloads may take time depending on your network—perfect time for coffee ☕
 The datasets get installed in the `~/rovio_ws/datsets` folder.
 These datasets are in ROS1 format. To convert them in ROS2 format, navigate to the rovio_ws directory and enter the following command:
-```
+```bash
 cd ~/rovio_ws/
 convert_euroc_datasets
 ```
@@ -149,27 +135,34 @@ Converted datasets are saved as `[dataset_name]_ros2` in respective dataset fold
 
 By default, the config files provided in `cfg` folders have calibration and config parameters for the EUROC dataset.
 To run ROVIO on the EUROC dataset source the `rovio_commands.sh` script and execute the following command:
-```
+```bash
 cd ~/rovio_ws/
 run_rovio_euroc
 ```
 On running this command ROVIO will be executed on all ros2 folders in the `~/rovio_ws/datasets/machine_hall` folder.
 A vizualization window appears during execution.
 
+ROVIO can also be run on euroc dataset by launching the node and  playing the ros2 bag files. This is called the live version.
+This is closer to the way ROVIO will be run on Robot. 
+```bash
+run_rovio_euroc_live
+```
+Results from this run are saved in `[daataset]_ros2/rovio/
+
 ### Evaluating ROVIO on EUROC datasets ###
 
 To evaluate ROVIO on EUROC dataset the tool [evo](https://michaelgrupp.github.io/evo/) is used. It computes the [ATE and RPE metrics](https://docs.openvins.com/eval-metrics.html) trajectory error metrics.
 With the `rovio_commands.sh` script sourced, execute the follwing command to install evo:
-```
+```bash
 install_evaluation_dependencies
 ```
 To perform the evaluation execute the following command:
-```
+```bash
 evaluate_rovio_euroc
 ```
 This computes the metrics and plots and saves the data in the `rovio` folder in each of the datasets folder.
 It also generates a csv file for each dataset that contains the metrics for the results in the respective results folder.
-
+Evaluation of results can also be performed on the evaluation of live results.
 ### ROVIO on your robot ###
 
 To run ROVIO on your custom camera-IMU setup please refer to this [documentation](doc/CustomSetup.md)

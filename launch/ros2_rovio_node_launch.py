@@ -15,12 +15,6 @@ def generate_launch_description():
     cam0_config_arg = DeclareLaunchArgument('cam0_config',default_value=cam0_config)
     cam1_config = os.path.join(package_share,'cfg', 'euroc_cam1.yaml')
     cam1_config_arg = DeclareLaunchArgument('cam1_config',default_value=cam1_config)
-    shaders_vs = os.path.join(package_share, 'shaders', 'shaders.vs')
-    shaders_vsFileName_arg = DeclareLaunchArgument('shaders_mVSFileName',
-                                                    default_value=shaders_vs)
-    shaders_fs = os.path.join(package_share, 'shaders', 'shaders.fs')
-    shaders_fsFileName_arg = DeclareLaunchArgument('shaders_mFSFileName',
-                                                   default_value= shaders_fs)
     print("cam1 config: ", cam1_config)
     print("cam0 config: ", cam0_config)
     print("filter config: ", config_file)
@@ -34,8 +28,7 @@ def generate_launch_description():
                 'filter_config': LaunchConfiguration('filter_config'),
                 'camera0_config': LaunchConfiguration('cam0_config'),
                 'camera1_config': LaunchConfiguration('cam1_config'),
-                'shaders_mVSFileName': LaunchConfiguration('shaders_mVSFileName'),
-                'shaders_mFSFileName': LaunchConfiguration('shaders_mFSFileName')
+                'use_sim_time' : True
             }
         ]
     )
@@ -43,7 +36,5 @@ def generate_launch_description():
         filter_config_arg,
         cam0_config_arg,
         cam1_config_arg,
-        shaders_vsFileName_arg,
-        shaders_fsFileName_arg,
         rovio_node
     ])

@@ -24,9 +24,18 @@ function build_rovio() {
   colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release
 }
 
-#fucntion to build rovio with scene
-function build_rovio_scene() {
-  colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release -DMAKE_SCENE=ON
+#function to build rovio fresh
+function build_rovio_fresh() {
+  ROVIO_WS=$(pwd)
+  rm -rf $ROVIO_WS/build $ROVIO_WS/install $ROVIO_WS/log
+  colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release
+}
+
+#function to build rovio fresh in debug mode
+function build_rovio_fresh() {
+  ROVIO_WS=$(pwd)
+  rm -rf $ROVIO_WS/build $ROVIO_WS/install $ROVIO_WS/log
+  colcon build --cmake-args -DCMAKE_BUILD_TYPE=Debug
 }
 
 #function to convert euroc datasets from ros 1 to ros2 bag formats
@@ -143,6 +152,30 @@ function run_rovio_euroc() {
     echo "Processing dataset: ${ROS2_BAG_LOCATION}"
     if [ -f ${ROS2_BAG_LOCATION} ]; then
       ros2 launch rovio ros2_rovio_rosbag_node_launch.py rosbag_filename:=$ROS2_BAG_LOCATION
+    else
+      echo "Skipping dataset: ${dir}, no ros2 bag file found"
+    fi
+  done
+}
+
+#function to run rovio on euroc datasets using the live verson
+function run_rovio_euroc_live() {
+  #function to run rovio on euroc datasets
+  EUROC_DATASETS_LOCATION=$(pwd)/datasets/machine_hall
+  ROVIO_WS=$(pwd)/install/setup.bash
+  dirList=($(ls ${EUROC_DATASETS_LOCATION}))
+  source $ROVIO_WS
+  for dir in "${dirList[@]}"; do
+    ROS2_BAG_LOCATION=${EUROC_DATASETS_LOCATION}/${dir}/${dir}_ros2/${dir}_ros2.db3
+    ROVIO_OUTPUT_LOCATION=${EUROC_DATASETS_LOCATION}/${dir}/${dir}_ros2/rovio
+    echo "Deleting prevous rovio output location"
+    rm -rf ${ROVIO_OUTPUT_LOCATION}
+    echo "Processing dataset: ${ROS2_BAG_LOCATION}"
+    if [ -f ${ROS2_BAG_LOCATION} ]; then
+      ros2 launch rovio ros2_rovio_node_launch.py &
+      ros2 bag record -a -O ${ROVIO_OUTPUT_LOCATION}/rovio_live_outptut.bag &
+      ros2 bag play ${ROS2_BAG_LOCATION} --clock --start-time 30
+      killall -9 rovio_node
     else
       echo "Skipping dataset: ${dir}, no ros2 bag file found"
     fi
