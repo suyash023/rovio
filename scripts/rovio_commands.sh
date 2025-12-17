@@ -3,6 +3,7 @@
 #Author: Suyash Yeotikar
 #This file contains helper functions to execute commands of the rovio package.
 #Usage: source rovio_commands.sh . Then execute any of the functions below.
+#Note: run all commands in this file from rovio_ws folder in a terminal
 
 #function to clone rovio from github
 function clone_rovio() {
@@ -51,7 +52,15 @@ function build_rovio_debug() {
 }
 
 #function to install euroc datasets
-#function install_euroc_datasets() {}
+function install_euroc_datasets() {
+  DATASETS_DIR=$(pwd)/datasets
+  EUROC_LINK="https://www.research-collection.ethz.ch/bitstreams/7b2419c1-62b5-4714-b7f8-485e5fe3e5fe/download"
+  mkdir -p $DATASETS_DIR
+  wget -P $DATASETS_DIR $EUROC_LINK
+  unzip -d ${DATASETS_DIR} ${DATASETS_DIR}/download
+  rm -rf ${DATASETS_DIR}/download
+}
+
 
 
 #fuction to install evaluation dependecies
@@ -101,8 +110,8 @@ function install_ros2() {
     sudo dpkg -i /tmp/ros2-apt-source.deb
     sudo apt update
     sudo apt upgrade
-    sudo apt install ros-${ROS_DISTRO}-desktop
-    sudo apt install ros-dev-tools
+    sudo apt install ros-${ROS_DISTRO}-desktop -y
+    sudo apt install ros-dev-tools -y
     echo "source /opt/ros/${ROS_DISTRO}/setup.bash" >> ~/.bashrc
   fi
 }
@@ -120,7 +129,7 @@ function install_scene_dependencies() {
   sudo apt-get install freeglut3-dev libglew-dev
 }
 
-#function to evaluate rovio on euroc datasets
+#function to run rovio on euroc datasets
 function run_rovio_euroc() {
   EUROC_DATASETS_LOCATION=$(pwd)/datasets/machine_hall
   ROVIO_WS=$(pwd)/install/setup.bash
@@ -138,6 +147,23 @@ function run_rovio_euroc() {
       echo "Skipping dataset: ${dir}, no ros2 bag file found"
     fi
   done
+}
+
+#function to evaluate rovio trajectory on euroc dataset results. Generates plots and ATE RPE metrics
+function evaluate_rovio_euroc() {
+  DATASETS_DIR="$(pwd)/datasets/machine_hall"
+  DIR_LIST=($(ls $DATASETS_DIR ))
+  GT_TOPIC="/leica/position"
+  ODOM_TOPIC="/rovio/odometry"
+  for dir in "${DIR_LIST[@]}"; do
+    ROVIO_RESULT=${DATASETS_DIR}/$dir/${dir}_ros2/rovio
+    BAG_FILE=$(ls $ROVIO_RESULT | grep "bag")
+    echo "Evaluating bag file: ${BAG_FILE}"
+    BAG_LOCATION=${ROVIO_RESULT}/${BAG_FILE}
+    evo_ape bag2 ${BAG_LOCATION} ${GT_TOPIC} ${ODOM_TOPIC} -va --save_results ${ROVIO_RESULT}/${dir}_ape_results.zip
+    evo_res ${ROVIO_RESULT}/${dir}_ape_results.zip --save_table ${ROVIO_RESULT}/${dir}_ape_rovio.csv
+  done
+
 }
 
 
