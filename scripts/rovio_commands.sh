@@ -158,24 +158,48 @@ function run_rovio_euroc() {
   done
 }
 
+function record_ros2_bag() {
+  until ros2 topic list | grep -q /clock; do
+    echo "waiting for ros2 bag play to start"
+  done
+  ros2 bag record -o $1 --clock
+}
+
 #function to run rovio on euroc datasets using the live verson
-function run_rovio_euroc_live() {
-  #function to run rovio on euroc datasets
+run_rovio_euroc_live() {
   EUROC_DATASETS_LOCATION=$(pwd)/datasets/machine_hall
   ROVIO_WS=$(pwd)/install/setup.bash
   dirList=($(ls ${EUROC_DATASETS_LOCATION}))
   source $ROVIO_WS
+
   for dir in "${dirList[@]}"; do
-    ROS2_BAG_LOCATION=${EUROC_DATASETS_LOCATION}/${dir}/${dir}_ros2/${dir}_ros2.db3
-    ROVIO_OUTPUT_LOCATION=${EUROC_DATASETS_LOCATION}/${dir}/${dir}_ros2/rovio
-    echo "Deleting prevous rovio output location"
-    rm -rf ${ROVIO_OUTPUT_LOCATION}
+    ROS2_BAG_LOCATION="${EUROC_DATASETS_LOCATION}/${dir}/${dir}_ros2/${dir}_ros2.db3"
+    ROVIO_OUTPUT_LOCATION="${EUROC_DATASETS_LOCATION}/${dir}/${dir}_ros2/rovio"
+    mkdir -p "${ROVIO_OUTPUT_LOCATION}"
+
     echo "Processing dataset: ${ROS2_BAG_LOCATION}"
-    if [ -f ${ROS2_BAG_LOCATION} ]; then
+    if [ -f "${ROS2_BAG_LOCATION}" ]; then
+      # Launch ROVIO in background
       ros2 launch rovio ros2_rovio_node_launch.py &
-      ros2 bag record -a -O ${ROVIO_OUTPUT_LOCATION}/rovio_live_outptut.bag &
-      ros2 bag play ${ROS2_BAG_LOCATION} --clock --start-time 30
+      ROVIO_PID=$!
+
+      # Wait until /clock is available
+      until ros2 topic list | grep -q "/clock"; do
+        sleep 0.2
+      done
+
+      # Start recording in background
+      nohup ros2 bag record -a -o "${ROVIO_OUTPUT_LOCATION}/rovio_live_output.bag" > /dev/null 2>&1 &
+      BAG_RECORD_PID=$!
+
+      # Play bag in foreground → script will wait until finished
+      ros2 bag play "${ROS2_BAG_LOCATION}" --clock
+
+      # After playback finishes, stop recording and ROVIO
       killall -9 rovio_node
+      killall -9 ros2
+
+      echo "Finished dataset: ${dir}"
     else
       echo "Skipping dataset: ${dir}, no ros2 bag file found"
     fi
