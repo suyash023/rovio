@@ -151,7 +151,7 @@ function run_rovio_euroc() {
     rm -rf ${ROVIO_OUTPUT_LOCATION}
     echo "Processing dataset: ${ROS2_BAG_LOCATION}"
     if [ -f ${ROS2_BAG_LOCATION} ]; then
-      ros2 launch rovio ros2_rovio_rosbag_node_launch.py rosbag_filename:=$ROS2_BAG_LOCATION
+      ros2 launch rovio ros2_rovio_rosbag_loader_launch.yaml rosbag_filename:=$ROS2_BAG_LOCATION
     else
       echo "Skipping dataset: ${dir}, no ros2 bag file found"
     fi
@@ -174,7 +174,7 @@ run_rovio_euroc_live() {
     echo "Processing dataset: ${ROS2_BAG_LOCATION}"
     if [ -f "${ROS2_BAG_LOCATION}" ]; then
       # Launch ROVIO in background
-      ros2 launch rovio ros2_rovio_node_launch.py &
+      ros2 launch rovio ros2_rovio_node_launch.yaml &
       ROVIO_PID=$!
 
       # Wait until /clock is available
