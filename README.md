@@ -1,4 +1,4 @@
-# ROVIO - Robust Omnidirectional Visual Inertial Odometry #
+# ROVIO - RObust Visual Inertial Odometry #
 
 ## TL;DR
 
@@ -33,7 +33,7 @@ I have worked extensively with ROVIO for several years—deploying it on constra
 ## Who This Repository Is For
 
 This fork is intended for:
-- Robotics engineers deploying VIO on real hardware
+- Hobbyists, tinkerers and engineers deploying VIO on real hardware
 - Researchers benchmarking or extending ROVIO
 - ROS 2 users seeking a maintained ROVIO workflow
 
@@ -147,7 +147,7 @@ This is closer to the way ROVIO will be run on Robot.
 ```bash
 run_rovio_euroc_live
 ```
-Results from this run are saved in `[daataset]_ros2/rovio/
+Results from this run are saved in `[daataset]_ros2/rovio/` fold.
 
 ### Evaluating ROVIO on EUROC datasets ###
 
@@ -171,32 +171,41 @@ To run ROVIO on your custom camera-IMU setup please refer to this [documentation
 
 ### Core Features
 - [x] ROS 2 support
-- [ ] Service calls
+- [ ] Reset Service calls
 - [ ] ROS 2 image‑based visualization
-
+- [ ] Resource usage  monitor
+  - [ ] CPU
+  - [ ] RAM
+  
 ### Infrastructure
 - [ ] CI/CD pipeline
-- [ ] ROS 2 YAML parameter support
+- [x] ROS 2 YAML parameter support
+  -  [ ] Topics as parameters
 - [ ] TF publishing
 - [ ] Reset services
 - [ ] JSON files for config
 
 ### Algorithmic Improvements
-- [ ] IMU time‑offset handling
+- [ ] IMU - camera time‑offset handling
 - [ ] Strong‑feature prioritization
 - [ ] Rolling‑shutter compensation
-- [ ] LiDAR sensor fusion
-- [ ] Sliding‑window BA (GTSAM)
+- [ ] 3D LiDAR sensor fusion
+- [ ] Sliding‑window BA (GTSAM/Ceres/G2o)
 - [ ] Vanishing point detection and fusion
+- [ ] Resizing image
+  - [ ] Scale camera matrix
 
 ### Evaluation & Tooling
 - [ ] RPE support in `rovio_commands.sh`
 - [ ] Cumulative ATE/RPE across datasets
+- [ ] Live version evaluation
+  - [ ] Script to convert point_msgs to pose_msgs
 
 ### Documentation
 - [ ] Wiki updates
 - [ ] Sensor calibration guide
 - [ ] Parameter breakdown
+- [ ] Custom setup computational tuning.
 
 ### Deployment
 - [ ] Docker support
