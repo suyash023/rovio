@@ -1,0 +1,27 @@
+launch:
+  - arg:
+      name: filter_config
+      default: "$(find-pkg-share rovio)/cfg/rovio.info"
+
+  - arg:
+      name: cam0_config
+      default: "$(find-pkg-share rovio)/cfg/euroc_cam0.yaml"
+
+  - arg:
+      name: cam1_config
+      default: "$(find-pkg-share rovio)/cfg/euroc_cam1.yaml"
+
+  - node:
+      pkg: rovio
+      exec: rovio_node
+      name: rovio
+      output: screen
+      param:
+        - name: filter_config
+          value: "$(var filter_config)"
+        - name: camera0_config
+          value: "$(var cam0_config)"
+        - name: camera1_config
+          value: "$(var cam1_config)"
+        - name: use_sim_time
+          value: true
