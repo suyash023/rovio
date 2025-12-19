@@ -146,7 +146,7 @@ function run_rovio_euroc() {
   source $ROVIO_WS
   for dir in "${dirList[@]}"; do
     ROS2_BAG_LOCATION=${EUROC_DATASETS_LOCATION}/${dir}/${dir}_ros2/${dir}_ros2.db3
-    ROVIO_OUTPUT_LOCATION=${EUROC_DATASETS_LOCATION}/${dir}/${dir}_ros2/rovio
+    ROVIO_OUTPUT_LOCATION=${EUROC_DATASETS_LOCATION}/${dir}/${dir}_ros2/rovio/
     echo "Deleting prevous rovio output location"
     rm -rf ${ROVIO_OUTPUT_LOCATION}
     echo "Processing dataset: ${ROS2_BAG_LOCATION}"
@@ -158,12 +158,6 @@ function run_rovio_euroc() {
   done
 }
 
-function record_ros2_bag() {
-  until ros2 topic list | grep -q /clock; do
-    echo "waiting for ros2 bag play to start"
-  done
-  ros2 bag record -o $1 --clock
-}
 
 #function to run rovio on euroc datasets using the live verson
 run_rovio_euroc_live() {
@@ -174,7 +168,7 @@ run_rovio_euroc_live() {
 
   for dir in "${dirList[@]}"; do
     ROS2_BAG_LOCATION="${EUROC_DATASETS_LOCATION}/${dir}/${dir}_ros2/${dir}_ros2.db3"
-    ROVIO_OUTPUT_LOCATION="${EUROC_DATASETS_LOCATION}/${dir}/${dir}_ros2/rovio"
+    ROVIO_OUTPUT_LOCATION="${EUROC_DATASETS_LOCATION}/${dir}/${dir}_ros2/rovio_live"
     mkdir -p "${ROVIO_OUTPUT_LOCATION}"
 
     echo "Processing dataset: ${ROS2_BAG_LOCATION}"
@@ -213,14 +207,13 @@ function evaluate_rovio_euroc() {
   GT_TOPIC="/leica/position"
   ODOM_TOPIC="/rovio/odometry"
   for dir in "${DIR_LIST[@]}"; do
-    ROVIO_RESULT=${DATASETS_DIR}/$dir/${dir}_ros2/rovio
+    ROVIO_RESULT=${DATASETS_DIR}/$dir/${dir}_ros2/rovio/
     BAG_FILE=$(ls $ROVIO_RESULT | grep "bag")
     echo "Evaluating bag file: ${BAG_FILE}"
     BAG_LOCATION=${ROVIO_RESULT}/${BAG_FILE}
     evo_ape bag2 ${BAG_LOCATION} ${GT_TOPIC} ${ODOM_TOPIC} -va --save_results ${ROVIO_RESULT}/${dir}_ape_results.zip
     evo_res ${ROVIO_RESULT}/${dir}_ape_results.zip --save_table ${ROVIO_RESULT}/${dir}_ape_rovio.csv
   done
-
 }
 
 
