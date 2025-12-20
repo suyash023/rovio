@@ -17,6 +17,7 @@ mkdir -p ~/rovio_ws/src
 cd ~/rovio_ws/src
 git clone git@github.com:suyash023/rovio.git
 git clone git@github.com:suyash023/rovio_interfaces.git
+cd rovio && git submodule update --init --recursive
 source rovio/scripts/rovio_commands.sh
 cd ~/rovio_ws && build_rovio
 ```
@@ -173,6 +174,7 @@ To run ROVIO on your custom camera-IMU setup please refer to this [documentation
 - [x] ROS 2 support
 - [ ] Reset Service calls
 - [ ] ROS 2 image‑based visualization
+- [ ] Multithreading
 - [ ] Resource usage  monitor
   - [ ] CPU
   - [ ] RAM
