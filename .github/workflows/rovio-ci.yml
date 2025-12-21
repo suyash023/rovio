@@ -19,6 +19,7 @@ jobs:
           cd rovio_ws/src/rovio
           git submodule update --init --recursive
           cd ..
+          echo "Current dir: $(pwd)"
           git clone https://github.com/suyash023/rovio_interfaces.git
       - name: install dependencies
         run: |
