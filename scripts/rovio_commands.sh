@@ -5,23 +5,9 @@
 #Usage: source rovio_commands.sh . Then execute any of the functions below.
 #Note: run all commands in this file from rovio_ws folder in a terminal
 
-#function to clone rovio from github
-function clone_rovio() {
-  ROVIO_URL="git@github.com:suyash023/rovio.git"
-  ROVIO_INTERFACES_URL="git@github.com:suyash023/rovio_interfaces.git"
-  CURRENT_DIR=$(pwd)
-  mkdir -p rovio_ws/src
-  cd rovio_ws/src/
-  git clone $ROVIO_URL
-  git clone $ROVIO_INTERFACES_URL
-  cd rovio
-  git submodule update --init --recursive
-  cd $CURRENT_DIR
-}
 
 #function to build rovio
 function build_rovio() {
-  colcon build --symlink-install --packages-select rovio_interfaces
   colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release
 }
 
@@ -29,7 +15,6 @@ function build_rovio() {
 function build_rovio_fresh() {
   ROVIO_WS=$(pwd)
   rm -rf $ROVIO_WS/build $ROVIO_WS/install $ROVIO_WS/log
-  colcon build --symlink-install --packages-select rovio_interfaces
   colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release
 }
 
@@ -37,7 +22,6 @@ function build_rovio_fresh() {
 function build_rovio_fresh() {
   ROVIO_WS=$(pwd)
   rm -rf $ROVIO_WS/build $ROVIO_WS/install $ROVIO_WS/log
-  colcon build --symlink-install --packages-select rovio_interfaces
   colcon build --cmake-args -DCMAKE_BUILD_TYPE=Debug
 }
 
