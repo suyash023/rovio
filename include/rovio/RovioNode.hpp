@@ -126,7 +126,9 @@ class RovioNode : public rclcpp::Node {
   bool forcePatchPublishing_;
   bool gotFirstMessages_;
   std::mutex m_filter_;
-
+  std::string imu_topic = "/imu0";
+  std::string cam0_topic = "/cam0/image_raw";
+  std::string cam1_topic = "/cam1/image_raw";
   // Nodes, Subscriber, Publishers
   rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr subImu_;
   rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr subImg0_;
@@ -255,10 +257,26 @@ class RovioNode : public rclcpp::Node {
     world_frame_ = "/world";
     camera_frame_ = "/camera";
     imu_frame_ = "/imu";
+    this->declare_parameter("map_frame", map_frame_);;
     this->get_parameter("map_frame",  map_frame_);
+
+    this->declare_parameter("world_frame", world_frame_);
     this->get_parameter("world_frame", world_frame_);
+
+    this->declare_parameter("camera_frame", camera_frame_);
     this->get_parameter("camera_frame", camera_frame_);
+
+    this->declare_parameter("imu_frame", imu_frame_);
     this->get_parameter("imu_frame", imu_frame_);
+
+    this->declare_parameter("imu_topic", imu_topic);
+    this->get_parameter("imu_topic", imu_topic);
+
+    this->declare_parameter("cam0_topic", cam0_topic);
+    this->get_parameter("cam0_topic", cam0_topic);
+
+    this->declare_parameter("cam1_topic", cam1_topic);
+    this->get_parameter("cam1_topic", cam1_topic);
 
     // Initialize messages
    // transformMsg_.header.frame_id = world_frame_;

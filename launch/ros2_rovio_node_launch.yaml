@@ -10,7 +10,15 @@ launch:
   - arg:
       name: cam1_config
       default: "$(find-pkg-share rovio)/cfg/euroc_cam1.yaml"
-
+  - arg:
+      name: imu_topic
+      default: "/imu0"
+  - arg:
+      name: cam0_topic
+      default: "/cam0/image_raw"
+  - arg:
+      name: cam1_topic
+      default: "/cam1/image_raw"
   - node:
       pkg: rovio
       exec: rovio_node
