@@ -16,10 +16,10 @@ jobs:
           ln -s ${GITHUB_WORKSPACE} rovio_ws/src/rovio
       - name: clone in ws
         run: |
-          cd rovio_ws/src
-          git clone https://github.com/suyash023/rovio_interfaces.git
-          cd rovio
+          cd rovio_ws/src/rovio
           git submodule update --init --recursive
+          cd ..
+          git clone https://github.com/suyash023/rovio_interfaces.git
       - name: install dependencies
         run: |
           source rovio_ws/src/rovio/scripts/rovio_commands.sh
