@@ -21,6 +21,7 @@ function clone_rovio() {
 
 #function to build rovio
 function build_rovio() {
+  colcon build --symlink-install --packages-select rovio_interfaces
   colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release
 }
 
@@ -28,6 +29,7 @@ function build_rovio() {
 function build_rovio_fresh() {
   ROVIO_WS=$(pwd)
   rm -rf $ROVIO_WS/build $ROVIO_WS/install $ROVIO_WS/log
+  colcon build --symlink-install --packages-select rovio_interfaces
   colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release
 }
 
@@ -35,6 +37,7 @@ function build_rovio_fresh() {
 function build_rovio_fresh() {
   ROVIO_WS=$(pwd)
   rm -rf $ROVIO_WS/build $ROVIO_WS/install $ROVIO_WS/log
+  colcon build --symlink-install --packages-select rovio_interfaces
   colcon build --cmake-args -DCMAKE_BUILD_TYPE=Debug
 }
 
