@@ -97,6 +97,19 @@ function check_ros2_install() {
   return 0
 }
 
+
+#function to install kindr
+function install_kindr() {
+  KINDR_URL="https://github.com/ethz-asl/kindr.git"
+  cd ~/
+  git clone ${KINDR_URL}
+  cd kindr
+  mkdir -p build
+  cd build
+  make ..
+  sudo make install
+}
+
 #function to install ROS2 if not alredy present
 function install_ros2() {
   ROS_DISTRO="humble"
@@ -129,6 +142,7 @@ function install_ros2() {
 #function to install rovio dependencies
 function install_dependencies() {
   install_ros2
+  install_kindr
 }
 
 #function to install rovio scene depdencies
