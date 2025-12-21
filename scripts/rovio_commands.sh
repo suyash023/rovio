@@ -101,13 +101,16 @@ function check_ros2_install() {
 #function to install kindr
 function install_kindr() {
   KINDR_URL="https://github.com/ethz-asl/kindr.git"
+  CURRENT_DIR=$(pwd)
   cd ~/
   git clone ${KINDR_URL}
   cd kindr
   mkdir -p build
   cd build
-  make ..
+  cmake ..
+  make -j10
   sudo make install
+  cd ${CURRENT_DIR}
 }
 
 #function to install ROS2 if not alredy present
