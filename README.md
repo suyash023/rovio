@@ -1,5 +1,5 @@
 # ROVIO - RObust Visual Inertial Odometry #
-![ROVIO CI build](https://github.com/suyash023/rovio/actions/workflows/rovio_ci.yml/badge.svg)
+![ROVIO CI build](https://github.com/suyash023/rovio/actions/workflows/rovio-ci.yml/badge.svg)
 
 
 ## TL;DR
