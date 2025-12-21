@@ -29,4 +29,5 @@ jobs:
         run: |
           source /opt/ros/humble/setup.bash
           source rovio_ws/src/rovio/scripts/rovio_commands.sh
+          cd rovio_ws
           build_rovio
