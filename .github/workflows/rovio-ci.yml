@@ -1,0 +1,31 @@
+name: ROVIO CI
+on:
+  push:
+    branches: [ feature/ros2, master]
+  pull_request:
+    branches: [ feature/ros2, master]
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - name : checkout repo
+        uses : actions/checkout@v4
+      - name: create ws
+        run: |
+          mkdir -p rovio_ws/src
+          ln -s ${GITHUB_WORKSPACE} rovio_ws/src/rovio
+      - name: clone in ws
+        run: |
+          cd rovio_ws/src
+          git clone https://github.com/suyash023/rovio_interfaces.git
+          cd rovio
+          git submodule update --init --recursive
+      - name: install dependencies
+        run: |
+          source rovio_ws/src/rovio/scripts/rovio_commands.sh
+          install_dependencies
+      - name: build rovio
+        run: |
+          source /opt/ros/humble/setup.bash
+          source rovio_ws/src/rovio/scripts/rovio_commands.sh
+          build_rovio
