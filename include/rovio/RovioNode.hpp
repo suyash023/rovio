@@ -129,6 +129,10 @@ class RovioNode : public rclcpp::Node {
   std::string imu_topic = "/imu0";
   std::string cam0_topic = "/cam0/image_raw";
   std::string cam1_topic = "/cam1/image_raw";
+  bool resize_image = false;
+  int resize_image_width = 320;
+  int resize_image_height = 240;
+
   // Nodes, Subscriber, Publishers
   rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr subImu_;
   rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr subImg0_;
@@ -277,6 +281,17 @@ class RovioNode : public rclcpp::Node {
 
     this->declare_parameter("cam1_topic", cam1_topic);
     this->get_parameter("cam1_topic", cam1_topic);
+
+    this->declare_parameter("resize_image", resize_image);
+    this->get_parameter("resize_image", resize_image);
+
+    this->declare_parameter("resize_image_width", resize_image_width);
+    this->get_parameter("resize_image_width", resize_image_width);
+
+    this->declare_parameter("resize_image_height", resize_image_height);
+    this->get_parameter("resize_image_height", resize_image_height);
+
+
 
     // Initialize messages
    // transformMsg_.header.frame_id = world_frame_;
@@ -531,6 +546,10 @@ class RovioNode : public rclcpp::Node {
     }
     cv::Mat cv_img;
     cv_ptr->image.copyTo(cv_img);
+    if ( resize_image ) {
+      cv::resize(cv_img, cv_img, cv::Size(resize_image_width, resize_image_height),
+                0,0, cv::INTER_LINEAR);
+    }
     if(init_state_.isInitialized() && !cv_img.empty()){
       double msgTime =  rclcpp::Time(img->header.stamp).nanoseconds() * 1e-9;
       if(msgTime != imgUpdateMeas_.template get<mtImgMeas::_aux>().imgTime_){

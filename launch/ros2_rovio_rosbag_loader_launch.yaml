@@ -53,3 +53,9 @@ launch:
           value: "$(var imu_topic_name)"
         - name: gt_topic_name
           value: "$(var gt_topic_name)"
+        - name: resize_image
+          value: false
+        - name: resize_image_width
+          value: 320
+        - name: reisze_image_height
+          value: 240

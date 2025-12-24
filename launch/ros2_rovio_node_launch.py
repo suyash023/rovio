@@ -18,6 +18,10 @@ def generate_launch_description():
     imu_topic_arg = DeclareLaunchArgument('imu_topic', default_value="/imu0")
     cam0_topic_arg = DeclareLaunchArgument('cam0_topic', default_value="/cam0/image_raw")
     cam1_topic_arg = DeclareLaunchArgument('cam1_topic', default_value="/cam1/image_raw")
+    resize_image_arg = DeclareLaunchArgument('resize_image', default_value=False)
+    resize_image_width_arg = DeclareLaunchArgument('resize_image_width', default_value=320)
+    resize_image_height_arg = DeclareLaunchArgument('reisze_image_height', default_value=240)
+
     print("cam1 config: ", cam1_config)
     print("cam0 config: ", cam0_config)
     print("filter config: ", config_file)
@@ -34,6 +38,9 @@ def generate_launch_description():
                 'imu_topic' : LaunchConfiguration('imu_topic'),
                 'cam0_topic' : LaunchConfiguration('cam0_topic'),
                 'cam1_topic' : LaunchConfiguration('cam1_topic'),
+                'resize_image' : LaunchConfiguration('resize_image'),
+                'resize_image_width': LaunchConfiguration('resize_image_width'),
+                'resize_image_height': LaunchConfiguration('resize_image_height'),
                 'use_sim_time' : True
             }
         ]
@@ -45,5 +52,8 @@ def generate_launch_description():
         imu_topic_arg,
         cam0_topic_arg,
         cam1_topic_arg,
+        resize_image_arg,
+        resize_image_width_arg,
+        resize_image_height_arg,
         rovio_node
     ])

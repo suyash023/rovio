@@ -21,6 +21,10 @@ def generate_launch_description():
     cam0_topic_arg = DeclareLaunchArgument('cam0_topic_name', default_value='/cam0/image_raw')
     cam1_topic_arg = DeclareLaunchArgument('cam1_topic_name', default_value="/cam1/image_raw")
     gt_topic_arg = DeclareLaunchArgument('gt_topic_name', default_value="/leica/position")
+    resize_image_arg = DeclareLaunchArgument('resize_image', default_value=False)
+    resize_image_width_arg = DeclareLaunchArgument('resize_image_width', default_value= 320)
+    resize_image_height_arg = DeclareLaunchArgument('resize_image_height', default_value=240)
+
     print("cam1 config: ", cam1_config)
     print("cam0 config: ", cam0_config)
     print("filter config: ", config_file)
@@ -39,7 +43,10 @@ def generate_launch_description():
                 'cam0_topic_name' : LaunchConfiguration('cam0_topic_name'),
                 'cam1_topic_name' : LaunchConfiguration('cam1_topic_name'),
                 'imu_topic_name' : LaunchConfiguration('imu_topic_name'),
-                'gt_topic_name' : LaunchConfiguration('gt_topic_name')
+                'gt_topic_name' : LaunchConfiguration('gt_topic_name'),
+                'resize_image' : LaunchConfiguration('resize_image'),
+                'resize_image_width': LaunchConfiguration('resize_image_width'),
+                'resize_image_height': LaunchConfiguration('resize_image_height')
             }
         ]
     )
@@ -52,5 +59,8 @@ def generate_launch_description():
         cam1_topic_arg,
         imu_topic_arg,
         gt_topic_arg,
+        resize_image_arg,
+        resize_image_width_arg,
+        resize_image_height_arg,
         rovio_node
     ])
