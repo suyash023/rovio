@@ -196,7 +196,7 @@ To run ROVIO on your custom camera-IMU setup please refer to this [documentation
 - [ ] 3D LiDAR sensor fusion
 - [ ] Sliding‑window BA (GTSAM/Ceres/G2o)
 - [ ] Vanishing point detection and fusion
-- [ ] Resizing image
+- [x] Resizing image
   - [ ] Scale camera matrix
 
 ### Evaluation & Tooling
