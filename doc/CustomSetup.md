@@ -108,6 +108,10 @@ Edit:
 ```
 rovio/launch/ros2_rovio_node_launch.yaml
 ```
+or
+```
+rovio/launch/ros2_rovio_rosbag_loader_launch.yaml
+```
 
 Update:
 - `imu_topic`
@@ -118,11 +122,11 @@ Update:
 ## 7. Computation and Performance Tuning
 
 Recommended for low-compute platforms:
-- Reduce image resolution. Recommended: **320x240**. 
-- Number of features: **10–15**
-- Patch size: **4**
-- `maxIterations`: **~10**
-- `alignMaxUniSample = 1`
+- Reduce image resolution. Recommended: **320x240**. Modify in `ros2_rovio_node_launch.yaml` and `ros2_rovio_rosbag_loader_launch.yaml.`
+- Number of features: **10–15**. Modify in `CMakeLists.txt` in the rovio folder.
+- Patch size: **4**. Modify in `CMakeLists.txt` in the rovio folder.
+- `maxIterations`: **~10**. Modify in `rovio.info` file.
+- `alignMaxUniSample = 1`. Modify in `rovio.info` file.
 
 ---
 
