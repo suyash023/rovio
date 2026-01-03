@@ -33,7 +33,7 @@ launch:
 
   - arg:
       name: resize_image
-      default: "true"
+      default: "false"
 
   - arg:
       name: resize_image_width
