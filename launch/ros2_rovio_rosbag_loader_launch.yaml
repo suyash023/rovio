@@ -1,0 +1,71 @@
+launch:
+  - arg:
+      name: filter_config
+      default: "$(find-pkg-share rovio)/cfg/rovio.info"
+
+  - arg:
+      name: cam0_config
+      default: "$(find-pkg-share rovio)/cfg/euroc_cam0.yaml"
+
+  - arg:
+      name: cam1_config
+      default: "$(find-pkg-share rovio)/cfg/euroc_cam1.yaml"
+
+  - arg:
+      name: rosbag_filename
+      default: "/home/suby/Desktop/Robotics_projects/open_source/rovio_ws/datasets/machine_hall/MH_01_easy/MH_01_easy_ros2/MH_01_easy_ros2.db3"
+
+  - arg:
+      name: imu_topic_name
+      default: "/imu0"
+
+  - arg:
+      name: cam0_topic_name
+      default: "/cam0/image_raw"
+
+  - arg:
+      name: cam1_topic_name
+      default: "/cam1/image_raw"
+
+  - arg:
+      name: gt_topic_name
+      default: "/leica/position"
+
+  - arg:
+      name: resize_image
+      default: "true"
+
+  - arg:
+      name: resize_image_width
+      default: "320"
+  - arg:
+      name: resize_image_height
+      default: "240"
+  - node:
+      pkg: rovio
+      exec: rovio_rosbag_loader
+      name: rovio
+      output: screen
+      param:
+        - name: filter_config
+          value: "$(var filter_config)"
+        - name: camera0_config
+          value: "$(var cam0_config)"
+        - name: camera1_config
+          value: "$(var cam1_config)"
+        - name: rosbag_filename
+          value: "$(var rosbag_filename)"
+        - name: cam0_topic_name
+          value: "$(var cam0_topic_name)"
+        - name: cam1_topic_name
+          value: "$(var cam1_topic_name)"
+        - name: imu_topic_name
+          value: "$(var imu_topic_name)"
+        - name: gt_topic_name
+          value: "$(var gt_topic_name)"
+        - name: resize_image
+          value: "$(var resize_image)"
+        - name: resize_image_width
+          value: "$(var resize_image_width)"
+        - name: resize_image_height
+          value: "$(var resize_image_height)"

@@ -46,7 +46,8 @@ class Camera{
   } type_;
 
   Eigen::Matrix3d K_; //!< Intrinsic parameter matrix.
-
+  int image_width_; //!< Width of image
+  int image_height_; //!< Height of image
   //@{
   /** \brief Distortion Parameter. */
   double k1_,k2_,k3_,k4_,k5_,k6_;
@@ -92,6 +93,13 @@ class Camera{
    *   @param filename - Path to the yaml-file, containing the distortion coefficients.
    */
   void loadDoubleSphere(const std::string& filename);
+
+  /** \brief Scale the camera matrix by a scaling factor
+   *  @param double scaling_factor_x - Scale the camera matrix focal length x and optical center x by a scaling factor.
+   *  @params double scaling_factor_y - Scale the y focal length and optical center y by a scaling factor.
+   *
+   */
+  void scaleCameraMatrix(double scale_x, double scale_y);
 
   /** \brief Loads and sets the distortion model and the corresponding distortion coefficients from yaml-file.
    *
