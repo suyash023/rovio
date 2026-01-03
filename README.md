@@ -184,7 +184,7 @@ To run ROVIO on your custom camera-IMU setup please refer to this [documentation
 ### Infrastructure
 - [ ] CI/CD pipeline
 - [x] ROS 2 YAML parameter support
-  -  [ ] Topics as parameters
+  -  [x] Topics as parameters
 - [ ] TF publishing
 - [ ] Reset services
 - [ ] JSON files for config
@@ -197,7 +197,7 @@ To run ROVIO on your custom camera-IMU setup please refer to this [documentation
 - [ ] Sliding‑window BA (GTSAM/Ceres/G2o)
 - [ ] Vanishing point detection and fusion
 - [x] Resizing image
-  - [ ] Scale camera matrix
+  - [x] Scale camera matrix
 
 ### Evaluation & Tooling
 - [ ] RPE support in `rovio_commands.sh`
