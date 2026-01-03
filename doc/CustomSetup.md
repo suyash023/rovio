@@ -1,48 +1,132 @@
-# Running ROVIO on a custom camera IMU sensor setup #
+# Running ROVIO on a Custom Camera–IMU Sensor Setup
 
-### Hardware ###
-ROVIO is a Visual Inertial odometry algorithm, primarily designed to work with a camera and IMU module.
-Sensors:
-* IMU - required. You can use IMU of any grade. Consumer grade IMUs are usually low-cost, and can provide good accuracy if good calibration data is available.
-* Camera - required. Global Shutter cameras are preferred, but they are less in number and usually a little more expensive than Rolling shutter cameras. Rolling shutter cameras can also be used, but expect some degradation in accuracy and also filter blowing up easily.
-* GPS - optional.
-* Optical Flow/ Velocity sensors - optional.
+This document describes the requirements and recommended practices for running **ROVIO (Robust Visual–Inertial Odometry)** on a custom hardware platform.
 
-### Timestamping and clock expectations ###
-Each input sensor stream within ROVIO is expected to be timestamped with the same clock source.
-It is best practice to timestamp the data as soon as the first fragment is obtained within the sensor driver.
-If the sensor streams come from different chipsets then make sure there is a time synchronization mechanism in place,
-or a mechanism to keep track of the time-offsets between the clocks.
+ROVIO is a tightly coupled VIO system and is sensitive to **timestamping**, **calibration**, and **configuration quality**. Following the guidelines below is critical for stable and accurate performance.
 
-Another aspect of the time synchronization mechanism will be covered in the extrinsics calibration section.
+---
 
-### Calibration ###
+## 1. Hardware Requirements
 
-Intrinsics - Specific and internal to the sensor.
-Extrinsics - Between two sensors.
+ROVIO is primarily designed to operate with a **camera + IMU** setup.
 
-* Intrinsics calibration:
-    * IMU -  calibration parameters typically consist of random walk noise parameters. Obtained from the allan calibration framework. See this link.
-    * Camera - Calibration parameters consist of focal length (fx, fy) and lens distortion parameters. ROVIO currently supports the following camera models:
-        * Radtan (plumb_bob) model : for non-fish eye models . Typically lenses with camera fov < 90 degrees.
-        * Equidistant model (fisheye) : for fisheye models. Typically camera lenses with camera fov > 90 degrees.
-        * Double sphere model : for high order fish eye camera lense. Typically lenses with > 180 degrees.
-    * Calibration tools:
-        * IMU : (allan calibration)[link], (allan calibration from rpng ) [link]
-        * Camera : (ros2 calibration tool)[link], (opencv camera calibration)[link]
+### Required Sensors
+- **IMU** (required)  
+  Any IMU grade can be used. Consumer-grade IMUs can achieve good performance **if properly calibrated** and if time synchronization is handled correctly.
 
-File formatting:
-The extrinsics calibration from kalibr tool and possibly other tools is usually expressed as a transformation matrix.
-ROVIO expects a quaternion from camera to IMU and a translation vector from IMU to camera, hence the transformation matrix output from kalibr would have to be converted to quternion and translation. You can use (this)[link] tool for the conversion.
-Modify the file (info)[rovio/cfg/rovio.info] from line numbers 11-18. Note that the quaternion has to be rotation from camera to IMU.
+- **Camera** (required)
+    - **Global shutter cameras** are strongly recommended.
+    - **Rolling shutter cameras** can be used, but may:
+        - Degrade accuracy
+        - Increase estimator instability
+        - Cause filter divergence in aggressive motion
 
-* Extrinsics calibration:
-    * IMU - camera : Relative placement of IMU camera sensor expressed as a transform. Also computed is an addtional time-offset between the timestamps of the two sensors, which is asssumed to be static.
-    * IMU - other sensor : Relative Placement of IMU and any other sensor expressed as a transform.
-    * Calibration tools:
-        * IMU - camera : (kalibr calibration)[link]
-        * IMU - other : Transform might have to be obtained based on guess work or CAD values.
-          File formatting:
-          In file euroc_cam0.yaml replace the data row on line number 8 (under camera matrix) with the fx, fy, cx,cy values (focal lengths and optical center) values from the intrinsics calibration.
+### Optional Sensors
+- **GPS**
+- **Optical flow / velocity sensors**
 
+---
 
+## 2. Timestamping and Clock Expectations
+
+ROVIO assumes **all sensor streams are timestamped using a consistent time base**.
+
+### Best Practices
+- Timestamp data **as close to the sensor driver as possible**
+- Avoid timestamping at higher-level processing nodes
+- If sensors come from different hardware clocks:
+    - Ensure a hardware or software synchronization mechanism
+    - Or maintain accurate, static time-offset estimates
+
+---
+
+## 3. Calibration Overview
+
+Calibration consists of two parts:
+
+| Type | Description |
+|---|---|
+| **Intrinsics** | Sensor-specific internal parameters |
+| **Extrinsics** | Relative transforms between sensors |
+
+---
+
+## 4. Intrinsics Calibration
+
+### IMU Intrinsics
+IMU calibration parameters typically include:
+- Noise density
+- Bias random walk
+
+Recommended tools:
+- https://github.com/ori-drs/allan_variance_ros
+- https://github.com/rpng/kalibr_allan
+
+**Configuration file:**  
+`rovio/cfg/rovio.info` (lines ~152–161)
+
+---
+
+### Camera Intrinsics
+
+Supported camera models:
+- **Radtan (plumb_bob)** – standard lenses (<90° FOV)
+- **Equidistant (fisheye)** – wide-angle lenses
+- **Double Sphere** – ultra-wide lenses (>180° FOV)
+
+Recommended calibration tools:
+- https://docs.nav2.org/tutorials/docs/camera_calibration.html
+- https://docs.opencv.org/4.x/dc/dbb/tutorial_py_calibration.html
+
+**Configuration file:**  
+`rovio/cfg/euroc_cam0.yaml`
+
+---
+
+## 5. Extrinsics Calibration
+
+### IMU ↔ Camera
+Extrinsics define:
+- Relative pose between IMU and camera
+- Static time offset between sensors
+
+Recommended tool:
+- https://github.com/ethz-asl/kalibr
+
+ROVIO expects:
+- Quaternion: rotation from **camera → IMU**
+- Translation: from **IMU → camera**
+
+**Configuration file:**  
+`rovio/cfg/rovio.info` (lines ~11–18)
+
+---
+
+## 6. Topic Configuration
+
+Edit:
+```
+rovio/launch/ros2_rovio_node_launch.yaml
+```
+
+Update:
+- `imu_topic`
+- `cam0_topic`
+
+---
+
+## 7. Computation and Performance Tuning
+
+Recommended for low-compute platforms:
+- Reduce image resolution. Recommended: **320x240**. 
+- Number of features: **10–15**
+- Patch size: **4**
+- `maxIterations`: **~10**
+- `alignMaxUniSample = 1`
+
+---
+
+## 8. Final Notes
+
+- ROVIO is sensitive to timestamping and calibration quality
+- Validate with recorded datasets before deploying on hardware
