@@ -46,5 +46,5 @@ launch:
           value: "$(var resize_image)"
         - name: resize_image_width
           value: "$(var resize_image_width)"
-        - name: reize_image_height
+        - name: resize_image_height
           value: "$(var resize_image_height)"

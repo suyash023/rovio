@@ -31,6 +31,16 @@ launch:
       name: gt_topic_name
       default: "/leica/position"
 
+  - arg:
+      name: resize_image
+      default: "true"
+
+  - arg:
+      name: resize_image_width
+      default: "320"
+  - arg:
+      name: resize_image_height
+      default: "240"
   - node:
       pkg: rovio
       exec: rovio_rosbag_loader
@@ -54,8 +64,8 @@ launch:
         - name: gt_topic_name
           value: "$(var gt_topic_name)"
         - name: resize_image
-          value: false
+          value: "$(var resize_image)"
         - name: resize_image_width
-          value: 320
-        - name: reisze_image_height
-          value: 240
+          value: "$(var resize_image_width)"
+        - name: resize_image_height
+          value: "$(var resize_image_height)"

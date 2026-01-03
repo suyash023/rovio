@@ -48,6 +48,7 @@
 //transform broadcaster in tf2
 #include <tf2/transform_datatypes.hpp>
 #include <visualization_msgs/msg/marker.hpp>
+#include <sstream>
 //Figure out why there are no srv includes
 // #include <rovio/SrvResetToPose.h>
 #include "rovio/RovioFilter.hpp"
@@ -130,6 +131,7 @@ class RovioNode : public rclcpp::Node {
   std::string cam0_topic = "/cam0/image_raw";
   std::string cam1_topic = "/cam1/image_raw";
   bool resize_image = false;
+  bool scale_camera_mat = true;
   int resize_image_width = 320;
   int resize_image_height = 240;
 
@@ -261,35 +263,16 @@ class RovioNode : public rclcpp::Node {
     world_frame_ = "/world";
     camera_frame_ = "/camera";
     imu_frame_ = "/imu";
-    this->declare_parameter("map_frame", map_frame_);;
-    this->get_parameter("map_frame",  map_frame_);
-
-    this->declare_parameter("world_frame", world_frame_);
-    this->get_parameter("world_frame", world_frame_);
-
-    this->declare_parameter("camera_frame", camera_frame_);
-    this->get_parameter("camera_frame", camera_frame_);
-
-    this->declare_parameter("imu_frame", imu_frame_);
-    this->get_parameter("imu_frame", imu_frame_);
-
-    this->declare_parameter("imu_topic", imu_topic);
-    this->get_parameter("imu_topic", imu_topic);
-
-    this->declare_parameter("cam0_topic", cam0_topic);
-    this->get_parameter("cam0_topic", cam0_topic);
-
-    this->declare_parameter("cam1_topic", cam1_topic);
-    this->get_parameter("cam1_topic", cam1_topic);
-
-    this->declare_parameter("resize_image", resize_image);
-    this->get_parameter("resize_image", resize_image);
-
-    this->declare_parameter("resize_image_width", resize_image_width);
-    this->get_parameter("resize_image_width", resize_image_width);
-
-    this->declare_parameter("resize_image_height", resize_image_height);
-    this->get_parameter("resize_image_height", resize_image_height);
+    map_frame_ = readAndDeclareParam<std::string>("map_frame");
+    world_frame_ = readAndDeclareParam<std::string>("world_frame");
+    camera_frame_ = readAndDeclareParam<std::string>("camera_frame");
+    imu_frame_ = readAndDeclareParam<std::string>("imu_frame");
+    imu_topic = readAndDeclareParam<std::string>("imu_topic");
+    cam0_topic = readAndDeclareParam<std::string>("cam0_topic");
+    cam1_topic = readAndDeclareParam<std::string>("cam1_topic");
+    resize_image = readAndDeclareParam<bool>("resize_image");
+    resize_image_width = readAndDeclareParam<int>("resize_image_width");
+    resize_image_height = readAndDeclareParam<int>("resize_image_height");
 
 
 
@@ -407,6 +390,24 @@ class RovioNode : public rclcpp::Node {
   /** \brief Destructor
    */
   virtual ~RovioNode(){}
+
+  /** \brief Function to declare and read a parameter.
+   * @tparam template type of parameter
+   * @param string param name
+   * @return paramter value
+   */
+  template <typename paramType>
+  paramType readAndDeclareParam(std::string paramName) {
+    paramType value;
+    this->declare_parameter(paramName, value);
+    this->get_parameter(paramName, value);
+    std::stringstream ss;
+    ss << value;
+    RCLCPP_INFO(this->get_logger(), "Param name: %s has value: %s ", paramName.c_str(), ss.str().c_str());
+    return value;
+  }
+
+
 
   /** \brief Tests the functionality of the rovio node.
    *
@@ -547,8 +548,13 @@ class RovioNode : public rclcpp::Node {
     cv::Mat cv_img;
     cv_ptr->image.copyTo(cv_img);
     if ( resize_image ) {
-      cv::resize(cv_img, cv_img, cv::Size(resize_image_width, resize_image_height),
-                0,0, cv::INTER_LINEAR);
+      cv::resize(cv_img, cv_img, cv::Size(resize_image_width, resize_image_height));
+      if ( scale_camera_mat ) {
+        double scale_x = static_cast<double>(cv_img.cols)/mpFilter_->multiCamera_.cameras_[camID].image_width_;
+        double scale_y = static_cast<double>(cv_img.rows)/mpFilter_->multiCamera_.cameras_[camID].image_height_;
+        mpFilter_->multiCamera_.cameras_[camID].scaleCameraMatrix(scale_x, scale_y);
+        scale_camera_mat = false;
+      }
     }
     if(init_state_.isInitialized() && !cv_img.empty()){
       double msgTime =  rclcpp::Time(img->header.stamp).nanoseconds() * 1e-9;

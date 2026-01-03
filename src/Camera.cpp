@@ -25,6 +25,20 @@ namespace rovio{
     K_(2,1) = config["camera_matrix"]["data"][7].as<double>();
     K_(2,2) = config["camera_matrix"]["data"][8].as<double>();
     std::cout << "Set Camera Matrix to:\n" << K_ << std::endl;
+    image_width_ = config["image_width"].as<int>();
+    image_height_ = config["image_height"].as<int>();
+  }
+
+  void Camera::scaleCameraMatrix(const double scale_x, const double scale_y) {
+    K_(0,0) = scale_x * K_(0,0);
+    K_(0,1) =  K_(0,1);
+    K_(0,2) = scale_x * K_(0,2);
+    K_(1,0) =  K_(1,0);
+    K_(1,1) = scale_y * K_(1,1);
+    K_(1,2) = scale_y * K_(1,2);
+    K_(2,1) =  K_(2,1);
+    K_(2,2) =  K_(2,2);
+    std::cout << "Set camera matrix to: \n" << K_ << std::endl;
   }
 
   void Camera::loadRadtan(const std::string& filename){
