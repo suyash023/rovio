@@ -1,6 +1,9 @@
 # ROVIO - RObust Visual Inertial Odometry #
 ![ROVIO CI build](https://github.com/suyash023/rovio/actions/workflows/rovio-ci.yml/badge.svg)
 
+<p align="center">
+  <img src="/doc/rovio_clip_0_15_to_0_25.gif" width="600">
+</p>
 
 ## TL;DR
 
