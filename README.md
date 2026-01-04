@@ -193,7 +193,7 @@ To run ROVIO on your custom camera-IMU setup please refer to this [documentation
 - [ ] JSON files for config
 
 ### Algorithmic Improvements
-- [ ] IMU - camera time‑offset handling
+- [x] IMU - camera time‑offset handling
 - [ ] Strong‑feature prioritization
 - [ ] Rolling‑shutter compensation
 - [ ] 3D LiDAR sensor fusion
@@ -210,9 +210,9 @@ To run ROVIO on your custom camera-IMU setup please refer to this [documentation
 
 ### Documentation
 - [ ] Wiki updates
-- [ ] Sensor calibration guide
+- [x] Sensor calibration guide
 - [ ] Parameter breakdown
-- [ ] Custom setup computational tuning.
+- [x] Custom setup computational tuning.
 
 ### Deployment
 - [ ] Docker support
