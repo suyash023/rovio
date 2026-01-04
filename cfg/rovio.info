@@ -16,7 +16,9 @@ Camera0
 	MrMC_x -0.0111674199187;											X-entry of IMU to Camera vector (expressed in IMU CF) [m]
 	MrMC_y -0.0574640920022;										Y-entry of IMU to Camera vector (expressed in IMU CF) [m]
 	MrMC_z 0.0207586947896;											Z-entry of IMU to Camera vector (expressed in IMU CF) [m]
+    imuCamera_timeOffset 0.0;                                       Time-offset added to image timestamp
 }
+
 Camera1
 {
 	CalibrationFile ;												Camera-Calibration file for intrinsics
@@ -27,7 +29,9 @@ Camera1
 	MrMC_x -0.0091929160801;											X-entry of IMU to Camera vector (expressed in IMU CF) [m]
 	MrMC_y 0.0540646643676;										Y-entry of IMU to Camera vector (expressed in IMU CF) [m]
 	MrMC_z 0.0190387660614;											Z-entry of IMU to Camera vector (expressed in IMU CF) [m]
+    imuCamera_timeOffset 0.0;                                       Time-offset added to image timestamp
 }
+
 Init
 {
     State
