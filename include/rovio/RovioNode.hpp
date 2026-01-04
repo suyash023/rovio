@@ -558,6 +558,7 @@ class RovioNode : public rclcpp::Node {
     }
     if(init_state_.isInitialized() && !cv_img.empty()){
       double msgTime =  rclcpp::Time(img->header.stamp).nanoseconds() * 1e-9;
+      msgTime += mpFilter_->camera_timeOffset_;
       if(msgTime != imgUpdateMeas_.template get<mtImgMeas::_aux>().imgTime_){
         for(int i=0;i<mtState::nCam_;i++){
           if(imgUpdateMeas_.template get<mtImgMeas::_aux>().isValidPyr_[i]){

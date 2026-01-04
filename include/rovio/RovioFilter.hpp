@@ -73,7 +73,7 @@ class RovioFilter:public LWF::FilterBase<ImuPrediction<FILTERSTATE>,
   rovio::MultiCamera<mtState::nCam_> multiCamera_;
   std::string cameraCalibrationFile_[mtState::nCam_];
   int depthTypeInt_;
-
+  double camera_timeOffset_ = 0.0;
   /** \brief Constructor. Initializes the filter.
    */
   RovioFilter(){
@@ -109,6 +109,7 @@ class RovioFilter:public LWF::FilterBase<ImuPrediction<FILTERSTATE>,
       }
       doubleRegister_.registerVector("Camera" + std::to_string(camID) + ".MrMC",init_.state_.MrMC(camID));
       doubleRegister_.registerQuaternion("Camera" + std::to_string(camID) + ".qCM",init_.state_.qCM(camID));
+      doubleRegister_.registerScalar("Camera" + std::to_string(camID) + ".imuCamera_timeOffset", camera_timeOffset_);
     }
     for(int i=0;i<mtState::nPose_;i++){
       doubleRegister_.removeScalarByVar(init_.state_.poseLin(i)(0));
