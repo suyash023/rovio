@@ -100,6 +100,12 @@ function install_kindr() {
   cd ${CURRENT_DIR}
 }
 
+#function to install image_view to view ROVIO vis published
+function install_image_view() {
+  sudo apt install -y ros2-${1}-image-view
+}
+
+
 #function to install ROS2 if not alredy present
 function install_ros2() {
   ROS_DISTRO="humble"
@@ -132,6 +138,7 @@ function install_ros2() {
 #function to install rovio dependencies
 function install_dependencies() {
   install_ros2
+  install_image_view
   install_kindr
 }
 
