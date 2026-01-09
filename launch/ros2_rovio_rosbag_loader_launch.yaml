@@ -69,3 +69,11 @@ launch:
           value: "$(var resize_image_width)"
         - name: resize_image_height
           value: "$(var resize_image_height)"
+  - node:
+      pkg: image_view
+      exec: image_view
+      name: rovio_image_view
+      output: screen
+      param:
+        - name: image
+          value: /rovio/imgVis0

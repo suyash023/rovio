@@ -70,6 +70,8 @@ Please also have a look at the wiki: https://github.com/ethz-asl/rovio/wiki
 * kindr (https://github.com/ethz-asl/kindr) - A git submodule.
 * ~~lightweight_filtering (as submodule, use "git submodule update --init --recursive")~~ : Lightweight_filtering has been removed as submodule from this repo. It is a static dependency now.
 * rovio_interfaces : This is a package needed to use services and custom messages for ROVIO. ROS2 now mandates that messages and services be maintained in a separate package.
+* image_view: ros2 package image_view is needed to view the visualization images published by rovio.
+
 
 ## Building ROVIO ##
 
