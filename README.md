@@ -177,7 +177,7 @@ To run ROVIO on your custom camera-IMU setup please refer to this [documentation
 
 ### Core Features
 - [x] ROS 2 support
-- [ ] Reset Service calls
+- [x] Reset Service calls
 - [ ] ROS 2 image‑based visualization
 - [ ] Multithreading
 - [ ] Resource usage  monitor
@@ -199,6 +199,9 @@ To run ROVIO on your custom camera-IMU setup please refer to this [documentation
 - [ ] 3D LiDAR sensor fusion
 - [ ] Sliding‑window BA (GTSAM/Ceres/G2o)
 - [ ] Vanishing point detection and fusion
+- [ ] Compiler flags
+  - [ ] ffast-math
+  - [ ] arm and cpu based
 - [x] Resizing image
   - [x] Scale camera matrix
 

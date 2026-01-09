@@ -46,6 +46,7 @@
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <std_srvs/srv/empty.hpp>
 //transform broadcaster in tf2
+#include <image_transport/image_transport.hpp>
 #include <tf2/transform_datatypes.hpp>
 #include <visualization_msgs/msg/marker.hpp>
 #include <sstream>
@@ -160,7 +161,7 @@ class RovioNode : public rclcpp::Node {
   rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr pubMarkers_;
   rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr pubImuBias_;
   rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr pubExtrinsics_[mtState::nCam_];
-
+  std::vector<image_transport::Publisher> imgVisPublishers_;
   // Ros Messages
   //Need to figure out transform stamped messages;
   //geometry_msgs::TransformStamped transformMsg_;
@@ -191,7 +192,8 @@ class RovioNode : public rclcpp::Node {
   rovio::FeatureOutputReadableCT featureOutputReadableCT_;
   rovio::FeatureOutputReadable featureOutputReadable_;
   MXD featureOutputReadableCov_;
-
+  int visFps = 5;
+  int visFrameCount = 0;
   // ROS names for output tf frames.
   std::string map_frame_;
   std::string world_frame_;
@@ -271,7 +273,13 @@ class RovioNode : public rclcpp::Node {
       pubExtrinsics_[camID] =
           this->create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>(
               "rovio/extrinsics" + std::to_string(camID), 1);
+       auto imgVisPublisher_ = image_transport::create_publisher(this,
+              "rovio/imgVis" + std::to_string(camID));
+        imgVisPublishers_.emplace_back(imgVisPublisher_);
     }
+
+
+
     pubImuBias_ =
         this->create_publisher<sensor_msgs::msg::Imu>("rovio/imu_biases", 1);
 
@@ -290,7 +298,7 @@ class RovioNode : public rclcpp::Node {
     resize_image = readAndDeclareParam<bool>("resize_image");
     resize_image_width = readAndDeclareParam<int>("resize_image_width");
     resize_image_height = readAndDeclareParam<int>("resize_image_height");
-
+    visFps = readAndDeclareParam<int>("vis_fps");
     // Initialize messages
     // transformMsg_.header.frame_id = world_frame_;
     // transformMsg_.child_frame_id = imu_frame_;
@@ -737,6 +745,7 @@ class RovioNode : public rclcpp::Node {
     init_state_.state_ = FilterInitializationState::State::WaitForInitExternalPose;
   }
 
+
   /** \brief Executes the update step of the filter and publishes the updated data.
    */
   void updateAndPublish(){
@@ -766,9 +775,12 @@ class RovioNode : public rclcpp::Node {
       if(mpFilter_->safe_.t_ > oldSafeTime){ // Publish only if something changed
         for(int i=0;i<mtState::nCam_;i++){
           if(!mpFilter_->safe_.img_[i].empty() && mpImgUpdate_->doFrameVisualisation_){
-            cv::namedWindow("Tracker" + std::to_string(i),cv::WINDOW_AUTOSIZE);
-            cv::imshow("Tracker" + std::to_string(i), mpFilter_->safe_.img_[i]);
-            cv::waitKey(1);
+            cv::Mat img = mpFilter_->safe_.img_[i];
+            std_msgs::msg::Header header;
+            header.frame_id = "cam" + std::to_string(i);
+            header.stamp = doubleToStamp(mpFilter_->safe_.t_);
+            auto msg = cv_bridge::CvImage(header, "bgr8", img).toImageMsg();
+            imgVisPublishers_[i].publish(msg);
           }
         }
         if(!mpFilter_->safe_.patchDrawing_.empty() && mpImgUpdate_->visualizePatches_){
@@ -778,13 +790,13 @@ class RovioNode : public rclcpp::Node {
 
         // Obtain the save filter state.
         mtFilterState& filterState = mpFilter_->safe_;
-	mtState& state = mpFilter_->safe_.state_;
+	      mtState& state = mpFilter_->safe_.state_;
         state.updateMultiCameraExtrinsics(&mpFilter_->multiCamera_);
         MXD& cov = mpFilter_->safe_.cov_;
         imuOutputCT_.transformState(state,imuOutput_);
         // Cout verbose for pose measurements
         if(mpImgUpdate_->verbose_){
-          if(mpPoseUpdate_->inertialPoseIndex_ >=0){
+          if(mpPoseUpdate_->inertialPoseIndex_  >=0){
             std::cout << "Transformation between inertial frames, IrIW, qWI: " << std::endl;
             std::cout << "  " << state.poseLin(mpPoseUpdate_->inertialPoseIndex_).transpose() << std::endl;
             std::cout << "  " << state.poseRot(mpPoseUpdate_->inertialPoseIndex_) << std::endl;
