@@ -775,12 +775,16 @@ class RovioNode : public rclcpp::Node {
       if(mpFilter_->safe_.t_ > oldSafeTime){ // Publish only if something changed
         for(int i=0;i<mtState::nCam_;i++){
           if(!mpFilter_->safe_.img_[i].empty() && mpImgUpdate_->doFrameVisualisation_){
-            cv::Mat img = mpFilter_->safe_.img_[i];
-            std_msgs::msg::Header header;
-            header.frame_id = "cam" + std::to_string(i);
-            header.stamp = doubleToStamp(mpFilter_->safe_.t_);
-            auto msg = cv_bridge::CvImage(header, "bgr8", img).toImageMsg();
-            imgVisPublishers_[i].publish(msg);
+            if ( visFrameCount >= visFps) {
+              cv::Mat img = mpFilter_->safe_.img_[i];
+              std_msgs::msg::Header header;
+              header.frame_id = "cam" + std::to_string(i);
+              header.stamp = doubleToStamp(mpFilter_->safe_.t_);
+              auto msg = cv_bridge::CvImage(header, "bgr8", img).toImageMsg();
+              imgVisPublishers_[i].publish(msg);
+              visFrameCount = 0;
+            }
+            visFrameCount++;
           }
         }
         if(!mpFilter_->safe_.patchDrawing_.empty() && mpImgUpdate_->visualizePatches_){
