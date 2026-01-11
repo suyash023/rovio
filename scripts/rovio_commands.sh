@@ -202,6 +202,7 @@ run_rovio_euroc_live() {
 
       # After playback finishes, stop recording and ROVIO
       killall -9 rovio_node
+      killall -9 image_view
       killall -9 ros2
 
       echo "Finished dataset: ${dir}"
