@@ -41,7 +41,7 @@ find_package(cv_bridge REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(rosbag2_cpp REQUIRED)
 find_package(rosbag2_storage REQUIRED)
-
+find_package(image_transport REQUIRED)
 
 # YAML
 find_package(PkgConfig REQUIRED)
@@ -81,6 +81,7 @@ ament_target_dependencies(${PROJECT_NAME}_lib
 		rosbag2_cpp
 		rosbag2_storage
 		rovio_interfaces
+		image_transport
 )
 target_link_libraries(${PROJECT_NAME}_lib
 		${YamlCpp_LIBRARIES}
@@ -132,6 +133,7 @@ ament_export_dependencies(
 		cv_bridge
 		tf2
 		rosidl_default_runtime
+		image_transport
 )
 
 ament_package()
