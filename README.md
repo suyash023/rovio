@@ -103,6 +103,10 @@ git clone git@github.com:suyash023/rovio_interfaces.git
 cd rovio
 git submodule update --init -- recursive
 ```
+* Install dependencies: ROS2, image_view
+```bash
+install_dependencies
+```
 
 * Build rovio
 
