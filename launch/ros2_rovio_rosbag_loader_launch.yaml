@@ -43,7 +43,7 @@ launch:
       default: "240"
   - arg:
       name: vis_fps
-      default: 5
+      default: "5"
   - node:
       pkg: rovio
       exec: rovio_rosbag_loader
