@@ -210,7 +210,8 @@ To run ROVIO on your custom camera-IMU setup please refer to this [documentation
   - [ ] arm and cpu based
 - [x] Resizing image
   - [x] Scale camera matrix
-
+  - 
+  - [ ] Float resizing for accuracy
 ### Evaluation & Tooling
 - [ ] RPE support in `rovio_commands.sh`
 - [ ] Cumulative ATE/RPE across datasets
