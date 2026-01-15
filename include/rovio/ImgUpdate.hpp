@@ -404,48 +404,21 @@ ImgOutlierDetection<typename FILTERSTATE::mtState>,false>{
    *  @param noise        - Additive discrete Gaussian noise.
    */
   void evalInnovation(mtInnovation& y, const mtState& state, const mtNoise& noise) const{
-    const int& ID = state.aux().activeFeature_;
-    const int& camID = state.CfP(ID).camID_;
-    const int activeCamID = (state.aux().activeCameraCounter_ + camID)%mtState::nCam_;
-    transformFeatureOutputCT_.setFeatureID(ID);
-    transformFeatureOutputCT_.setOutputCameraID(activeCamID);
-    transformFeatureOutputCT_.transformState(state,featureOutput_);
-
-    if(useDirectMethod_){
-      if(doFrameVisualisation_ && featureOutput_.c().com_c()){
-        if(activeCamID==camID){
-          featureOutput_.c().drawPoint(drawImg_, cv::Scalar(0,175,175));
-        } else {
-          featureOutput_.c().drawPoint(drawImg_, cv::Scalar(175,175,0));
-        }
-      }
-      if(alignment_.getLinearAlignEquationsReduced(meas_.aux().pyr_[activeCamID],*state.aux().mpCurrentFeature_->mpMultilevelPatch_,featureOutput_.c(),endLevel_,startLevel_,A_red_,b_red_)){
+      if (!cancelIteration_) {
         y.template get<mtInnovation::_pix>() = b_red_ + noise.template get<mtNoise::_pix>();
-        if(verbose_){
-          std::cout << "    \033[32mMaking update with feature " << ID << " from camera " << camID << " in camera " << activeCamID << "\033[0m" << std::endl;
-        }
       } else {
         y.template get<mtInnovation::_pix>() = noise.template get<mtNoise::_pix>();
-        if(verbose_){
-          std::cout << "    \033[31mFailed Construction of Alignment Equations with feature " << ID << " from camera " << camID << " in camera " << activeCamID << "\033[0m" << std::endl;
-        }
-        cancelIteration_ = true;
-      }
-    } else {
-      Eigen::Vector2d pixError;
-      pixError(0) = static_cast<double>(state.aux().feaCoorMeas_[ID].get_c().x - featureOutput_.c().get_c().x);
-      pixError(1) = static_cast<double>(state.aux().feaCoorMeas_[ID].get_c().y - featureOutput_.c().get_c().y);
-      y.template get<mtInnovation::_pix>() = pixError+noise.template get<mtNoise::_pix>();
     }
   }
 
-  bool generateCandidates(const mtFilterState& filterState, mtState& candidate) const{
+  bool generateCandidates(const mtFilterState& filterState, mtState& candidate, int &zeros) const{
     candidate = filterState.state_;
 
     if(candidateCounter_ == 0){
       const int& ID = candidate.aux().activeFeature_;
       const int& camID = candidate.CfP(ID).camID_;
       const int activeCamID = (candidate.aux().activeCameraCounter_ + camID)%mtState::nCam_;
+      zeros = transformFeatureOutputCT_.getzeros();
       transformFeatureOutputCT_.setFeatureID(ID);
       transformFeatureOutputCT_.setOutputCameraID(activeCamID);
       transformFeatureOutputCT_.transformState(candidate,featureOutput_);
@@ -453,20 +426,43 @@ ImgOutlierDetection<typename FILTERSTATE::mtState>,false>{
       mpMultiCamera_->cameras_[activeCamID].bearingToPixel(featureOutput_.c().get_nor(),c_temp_,c_J_);
 
       canditateGenerationH_  = -c_J_*featureOutputJac_.template block<2,mtState::D_>(0,0);
-      canditateGenerationPy_ = canditateGenerationH_*filterState.cov_*canditateGenerationH_.transpose();
+      canditateGenerationPy_ = canditateGenerationH_.template block<2,2>(0,zeros)*filterState.cov_.template block<2,2>(zeros,zeros)*canditateGenerationH_.template block<2,2>(0,zeros).transpose();
+
+#ifdef CHECK_GENERATE_MATRICES
+      static int total_comp_generate = 0;
+      total_comp_generate++;
+      static int total_fail_generate = 0;
+      bool generate_b = canditateGenerationPy_.isApprox(canditateGenerationH_*filterState.cov_*canditateGenerationH_.transpose(), 1e-12);
+      if (!generate_b) {
+        total_fail_generate++;
+        std::cout<<"generate_b is not the same! || " <<total_fail_generate<<"/"<<total_comp_generate<<std::endl;
+      }
+#endif
       candidateGenerationES_.compute(canditateGenerationPy_);
     }
 
-    while(++candidateCounter_){
+    while(++candidateCounter_) {
       int u = (candidateCounter_-1)/(2*alignMaxUniSample_+1)-alignMaxUniSample_;
       if(u>alignMaxUniSample_)
         break;
       int v = (candidateCounter_-1)%(2*alignMaxUniSample_+1)-alignMaxUniSample_;
       if(pow(u*alignConvergencePixelRange_,2)/candidateGenerationES_.eigenvalues()(0).real()
-          + pow(v*alignConvergencePixelRange_,2)/candidateGenerationES_.eigenvalues()(1).real() < pow(alignCoverageRatio_,2)){
+          + pow(v*alignConvergencePixelRange_,2)/candidateGenerationES_.eigenvalues()(1).real() < pow(alignCoverageRatio_,2)) {
         Eigen::Vector2d dy = u*alignConvergencePixelRange_*candidateGenerationES_.eigenvectors().col(0).real()
             + v*alignConvergencePixelRange_*candidateGenerationES_.eigenvectors().col(1).real();
-        canditateGenerationDifVec_ = -filterState.cov_*canditateGenerationH_.transpose()*canditateGenerationPy_.inverse()*dy;
+        const int cov_rows = 21 + 3* ROVIO_NMAXFEATURE;
+        canditateGenerationDifVec_ = -filterState.cov_.template block<cov_rows,2>(0,zeros)*canditateGenerationH_.template block<2,2>(0,zeros).transpose()*canditateGenerationPy_.inverse()*dy;
+
+#ifdef CHECK_GENERATE_MATRICES
+        static int total_comp_diff = 0;
+        total_comp_diff++;
+        static int total_fail_diff = 0;
+        bool diffgenerate_b = canditateGenerationDifVec_.isApprox(-filterState.cov_*canditateGenerationH_.transpose()*canditateGenerationPy_.inverse()*dy, 1e-12);
+        if (!diffgenerate_b) {
+          total_fail_diff++;
+          std::cout<<"diff generate_b is not the same! || " <<total_fail_diff<<"/"<<total_comp_diff<<std::endl;
+        }
+#endif
         candidate.boxPlus(canditateGenerationDifVec_,candidate);
         return true;
       }
