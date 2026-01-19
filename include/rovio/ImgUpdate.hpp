@@ -418,7 +418,7 @@ ImgOutlierDetection<typename FILTERSTATE::mtState>,false>{
       const int& ID = candidate.aux().activeFeature_;
       const int& camID = candidate.CfP(ID).camID_;
       const int activeCamID = (candidate.aux().activeCameraCounter_ + camID)%mtState::nCam_;
-      zeros = transformFeatureOutputCT_.getzeros();
+      zeros = transformFeatureOutputCT_.getZeros();
       transformFeatureOutputCT_.setFeatureID(ID);
       transformFeatureOutputCT_.setOutputCameraID(activeCamID);
       transformFeatureOutputCT_.transformState(candidate,featureOutput_);
@@ -538,8 +538,9 @@ ImgOutlierDetection<typename FILTERSTATE::mtState>,false>{
    *  \note If \ref useDirectMethod_ is set false, the jacobian is set w.r.t. the reprojection error.
    *  @param F     - Jacobian for the update step of the filter.
    *  @param state - Filter state.
+   *  @param itered - If 1 iteration of IEKF is complete
    */
-  void jacState(MXD& F, const mtState& state) const{
+  void jacState(MXD& F, const mtState& state, bool& itered) const{
     const int& ID = state.aux().activeFeature_;
     const int& camID = state.CfP(ID).camID_;
     const int activeCamID = (state.aux().activeCameraCounter_ + camID)%mtState::nCam_;
@@ -548,7 +549,8 @@ ImgOutlierDetection<typename FILTERSTATE::mtState>,false>{
     transformFeatureOutputCT_.transformState(state,featureOutput_);
 
     if(useDirectMethod_){
-      if(alignment_.getLinearAlignEquationsReduced(meas_.aux().pyr_[activeCamID],*state.aux().mpCurrentFeature_->mpMultilevelPatch_,featureOutput_.c(),endLevel_,startLevel_,A_red_,b_red_)){
+      if(alignment_.getLinearAlignEquationsReduced(meas_.aux().pyr_[activeCamID],
+        *state.aux().mpCurrentFeature_->mpMultilevelPatch_,featureOutput_.c(),endLevel_,startLevel_,A_red_,b_red_, itered)){
         transformFeatureOutputCT_.jacTransform(featureOutputJac_,state);
         mpMultiCamera_->cameras_[activeCamID].bearingToPixel(featureOutput_.c().get_nor(),c_temp_,c_J_);
         F = -A_red_*c_J_*featureOutputJac_.template block<2,mtState::D_>(0,0);

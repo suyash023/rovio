@@ -52,7 +52,7 @@ class MultilevelPatchAlignment {
   mutable double bestIntensityError_; /**<Intensity error for the match.*/
   mutable MultilevelPatch<nLevels,patch_size> mlpTemp_; /**<Temporary multilevel patch used for various computations.*/
   mutable MultilevelPatch<nLevels,patch_size> mlpError_;  /**<Multilevel patch containing errors and its gradient.*/
-  mutable bool skip_gradient_; /**<Skip gradient computation if an iteration is already complete
+  mutable bool skip_gradient_; /**<Skip gradient computation if an iteration is already complete */
   Patch<patch_size> extractedPatches_[nLevels];  /**<Extracted patches used for alignment.*/
   float huberNormThreshold_;  /**<Intensity error threshold for Huber norm.*/
   float w_[nLevels*patch_size*patch_size] __attribute__ ((aligned (16)));  /**<Weighting for patch intensity errors.*/
@@ -308,8 +308,7 @@ class MultilevelPatchAlignment {
    * @return true, if successful.
    */
   bool getLinearAlignEquationsReduced(const ImagePyramid<nLevels>& pyr, const MultilevelPatch<nLevels,patch_size>& mp, const FeatureCoordinates& c, const int l1, const int l2,
-                                      Eigen::Matrix2f& A_red, Eigen::Vector2f& b_red, bool &itered) {
-    skip_gradient_ = itered;
+                                      Eigen::Matrix2f& A_red, Eigen::Vector2f& b_red) {
     bool success = getLinearAlignEquations(pyr,mp,c,l1,l2,A_,b_);
     if(success){
       mColPivHouseholderQR_.compute(A_);
@@ -339,9 +338,10 @@ class MultilevelPatchAlignment {
    * @return true, if successful.
    */
   bool getLinearAlignEquationsReduced(const ImagePyramid<nLevels>& pyr, const MultilevelPatch<nLevels,patch_size>& mp, const FeatureCoordinates& c, const int l1, const int l2,
-                                      Eigen::Matrix2d& A_red, Eigen::Vector2d& b_red){
+                                      Eigen::Matrix2d& A_red, Eigen::Vector2d& b_red, bool &itered){
     Eigen::Matrix2f A_red_;
     Eigen::Vector2f b_red_;
+    skip_gradient_ = itered;
     bool success = getLinearAlignEquationsReduced(pyr,mp,c,l1,l2,A_red_,b_red_);
     if(success){
       A_red = A_red_.cast<double>();

@@ -171,10 +171,11 @@ class VelocityUpdate: public LWF::Update<VelocityInnovation,FILTERSTATE,Velocity
    *
    *  @param F     - Jacobian for the update step of the filter.
    *  @param state - Filter state.
+   *  @param itered - If 1 iteration of EKF update is complete.
    *  @param meas  - Not used.
    *  @param dt    - Not used.
    */
-  void jacState(MXD& F, const mtState& state) const{
+  void jacState(MXD& F, const mtState& state, bool &itered) const{
     F.setZero();
     F.template block<3,3>(mtInnovation::template getId<mtInnovation::_vel>(),mtState::template getId<mtState::_vel>()) = MPD(qAM_).matrix();
   }
