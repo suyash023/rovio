@@ -58,6 +58,7 @@ Papers:
 * http://dx.doi.org/10.3929/ethz-a-010566547 (IROS 2015)
 * http://dx.doi.org/10.1177/0278364917728574 (IJRR 2017)
 * https://rpg.ifi.uzh.ch/docs/ICRA18_Delmerico.pdf (Computational efficiency of ROVIO)
+* https://nva.sikt.no/registration/0198ec92f656-bb2ddc14-baf5-4b0a-8f0b-aca855076c48  (NTNU arl masters thesis on ROVIO using thermal camera (2021))
 * https://www.worldscientific.com/doi/10.1142/S2301385024410012 (Improving ROVIO  2023)
 
 Please also have a look at the wiki: https://github.com/ethz-asl/rovio/wiki
@@ -210,8 +211,8 @@ To run ROVIO on your custom camera-IMU setup please refer to this [documentation
   - [ ] arm and cpu based
 - [x] Resizing image
   - [x] Scale camera matrix
-  - 
   - [ ] Float resizing for accuracy
+
 ### Evaluation & Tooling
 - [ ] RPE support in `rovio_commands.sh`
 - [ ] Cumulative ATE/RPE across datasets
@@ -229,9 +230,11 @@ To run ROVIO on your custom camera-IMU setup please refer to this [documentation
 - [ ] Prebuilt Docker images
 
 ### Research Integrations
-- [ ] TU Delft optimizations
+- [x] TU Delft optimizations
+  - [ ] Toggle feature selection based on Feature detector score or shi-tomasi score
 - [ ] MAPLAB optimizations
 - [ ] Health monitoring cleanup
+- [ ] ROTVIO
 
 ## Support & Collaboration
 
