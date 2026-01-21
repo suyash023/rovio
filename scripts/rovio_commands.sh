@@ -166,6 +166,7 @@ function run_rovio_euroc() {
     else
       echo "Skipping dataset: ${dir}, no ros2 bag file found"
     fi
+    killall -9 image_view
   done
 }
 
