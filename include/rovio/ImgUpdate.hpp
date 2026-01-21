@@ -229,7 +229,8 @@ ImgOutlierDetection<typename FILTERSTATE::mtState>,false>{
   double alignmentGradientExponent_; /**<Exponent used for gradient based weighting of residuals.*/
   double discriminativeSamplingDistance_; /**<Sampling distance for checking discriminativity of patch (if <= 0.0 no check is performed).*/
   double discriminativeSamplingGain_; /**<Gain for threshold above which the samples must lie (if <= 1.0 the patchRejectionTh is used).*/
-
+  bool useFeatureDetectorScoreSelection_; /**<Use feature detector score for feature selection within ROVIO instead of shi-tomasi*/
+  std::vector<uint8_t> featureDetScores; /**<Vector to store the feature detector scores for selection */
 
   // Temporary
   mutable PixelOutputCT pixelOutputCT_;
@@ -350,6 +351,7 @@ ImgOutlierDetection<typename FILTERSTATE::mtState>,false>{
     doubleRegister_.registerScalar("UpdateNoise.pix",updateNoisePix_);
     doubleRegister_.registerScalar("UpdateNoise.int",updateNoiseInt_);
     doubleRegister_.registerScalar("noiseGainForOffCamera",noiseGainForOffCamera_);
+    boolRegister_.registerScalar("useFastScoreFeatureSelection", useFeatureDetectorScoreSelection_);
     useImprovedJacobian_ = false; // TODO: adapt/test
     isZeroVelocityUpdateEnabled_ = false;
     Base::PropertyHandler::registerSubHandler("ZeroVelocityUpdate",zeroVelocityUpdate_);
@@ -983,13 +985,20 @@ ImgOutlierDetection<typename FILTERSTATE::mtState>,false>{
         const double t1 = (double) cv::getTickCount();
         candidates_.clear();
         for(int l=endLevel_;l<=startLevel_;l++){
-          meas.aux().pyr_[camID].detectFastCorners(candidates_,l,fastDetectionThreshold_, mpMultiCamera_->cameras_[camID].valid_radius_);
+          meas.aux().pyr_[camID].detectFastCorners(candidates_,featureDetScores,l,fastDetectionThreshold_, mpMultiCamera_->cameras_[camID].valid_radius_);
         }
         const double t2 = (double) cv::getTickCount();
         if(verbose_) std::cout << "== Detected " << candidates_.size() << " on levels " << endLevel_ << "-" << startLevel_ << " (" << (t2-t1)/cv::getTickFrequency()*1000 << " ms)" << std::endl;
-        std::unordered_set<unsigned int> newSet = filterState.fsm_.addBestCandidates(candidates_,meas.aux().pyr_[camID],camID,filterState.t_,
-                                                                    endLevel_,startLevel_,(mtState::nMax_-filterState.fsm_.getValidCount())/(mtState::nCam_-camID),nDetectionBuckets_, scoreDetectionExponent_,
-                                                                    penaltyDistance_, zeroDistancePenalty_,false,minAbsoluteSTScore_);
+        std::unordered_set<unsigned int> newSet;
+        if ( useFeatureDetectorScoreSelection_) {
+           newSet  = filterState.fsm_.addBestCandidates(candidates_, featureDetScores, meas.aux().pyr_[camID],
+            camID, filterState.t_, endLevel_, startLevel_,(mtState::nMax_-filterState.fsm_.getValidCount())/(mtState::nCam_-camID),
+            nDetectionBuckets_, scoreDetectionExponent_,penaltyDistance_, zeroDistancePenalty_,false,minAbsoluteSTScore_);
+        } else {
+          newSet = filterState.fsm_.addBestCandidates(candidates_,meas.aux().pyr_[camID],camID,filterState.t_,
+          endLevel_,startLevel_,(mtState::nMax_-filterState.fsm_.getValidCount())/(mtState::nCam_-camID),
+          nDetectionBuckets_, scoreDetectionExponent_, penaltyDistance_, zeroDistancePenalty_,false,minAbsoluteSTScore_);
+        }
         const double t3 = (double) cv::getTickCount();
         if(verbose_) std::cout << "== Got " << filterState.fsm_.getValidCount() << " after adding " << newSet.size() << " features in camera " << camID << " (" << (t3-t2)/cv::getTickFrequency()*1000 << " ms)" << std::endl;
         for(auto it = newSet.begin();it != newSet.end();++it){
