@@ -149,6 +149,22 @@ function install_scene_dependencies() {
   sudo apt-get install freeglut3-dev libglew-dev
 }
 
+#function to wait for ROVIO to finish completion
+function wait_for_rovio() {
+  echo "Waiting for ROVIO to start..."
+  until ros2 node list | grep -q "/rovio" > /dev/null; do
+    sleep 1
+  done
+
+  echo "ROVIO running, waiting for completion..."
+  while ros2 node list | grep -qx "/rovio" > /dev/null; do
+    sleep 1
+  done
+
+  echo "ROVIO finished"
+}
+
+
 #function to run rovio on euroc datasets
 function run_rovio_euroc() {
   EUROC_DATASETS_LOCATION=$(pwd)/datasets/machine_hall
@@ -162,11 +178,12 @@ function run_rovio_euroc() {
     rm -rf ${ROVIO_OUTPUT_LOCATION}
     echo "Processing dataset: ${ROS2_BAG_LOCATION}"
     if [ -f ${ROS2_BAG_LOCATION} ]; then
-      ros2 launch rovio ros2_rovio_rosbag_loader_launch.yaml rosbag_filename:=$ROS2_BAG_LOCATION
+      ros2 launch rovio ros2_rovio_rosbag_loader_launch.yaml rosbag_filename:=$ROS2_BAG_LOCATION &
+      wait_for_rovio
+      killall -9 image_view
     else
       echo "Skipping dataset: ${dir}, no ros2 bag file found"
     fi
-    killall -9 image_view
   done
 }
 
