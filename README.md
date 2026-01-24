@@ -24,7 +24,7 @@ git clone git@github.com:suyash023/rovio.git
 git clone git@github.com:suyash023/rovio_interfaces.git
 cd rovio && git submodule update --init --recursive
 source rovio/scripts/rovio_commands.sh
-cd ~/rovio_ws && build_rovio
+cd ~/rovio_ws &&  install_dependencies && build_rovio
 ```
 ## History and Present ##
 
