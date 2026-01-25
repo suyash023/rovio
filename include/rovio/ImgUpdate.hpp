@@ -230,7 +230,6 @@ ImgOutlierDetection<typename FILTERSTATE::mtState>,false>{
   double discriminativeSamplingDistance_; /**<Sampling distance for checking discriminativity of patch (if <= 0.0 no check is performed).*/
   double discriminativeSamplingGain_; /**<Gain for threshold above which the samples must lie (if <= 1.0 the patchRejectionTh is used).*/
   bool useFeatureDetectorScoreSelection_; /**<Use feature detector score for feature selection within ROVIO instead of shi-tomasi*/
-  std::vector<uint8_t> featureDetScores; /**<Vector to store the feature detector scores for selection */
 
   // Temporary
   mutable PixelOutputCT pixelOutputCT_;
@@ -249,6 +248,7 @@ ImgOutlierDetection<typename FILTERSTATE::mtState>,false>{
   mutable Eigen::Matrix2d c_J_;
   mutable Eigen::Matrix2d A_red_;
   mutable Eigen::Vector2d b_red_;
+  mutable std::vector<uint8_t> featureDetScores; /**<Vector to store the feature detector scores for selection */
 
   mutable Eigen::MatrixXd canditateGenerationH_;
   mutable Eigen::MatrixXd canditateGenerationDifVec_;
@@ -351,7 +351,7 @@ ImgOutlierDetection<typename FILTERSTATE::mtState>,false>{
     doubleRegister_.registerScalar("UpdateNoise.pix",updateNoisePix_);
     doubleRegister_.registerScalar("UpdateNoise.int",updateNoiseInt_);
     doubleRegister_.registerScalar("noiseGainForOffCamera",noiseGainForOffCamera_);
-    boolRegister_.registerScalar("useFastScoreFeatureSelection", useFeatureDetectorScoreSelection_);
+    boolRegister_.registerScalar("useFeatureDetectorScoreSelection", useFeatureDetectorScoreSelection_);
     useImprovedJacobian_ = false; // TODO: adapt/test
     isZeroVelocityUpdateEnabled_ = false;
     Base::PropertyHandler::registerSubHandler("ZeroVelocityUpdate",zeroVelocityUpdate_);
@@ -984,6 +984,7 @@ ImgOutlierDetection<typename FILTERSTATE::mtState>,false>{
         if(verbose_) std::cout << "Adding keypoints" << std::endl;
         const double t1 = (double) cv::getTickCount();
         candidates_.clear();
+        featureDetScores.clear();
         for(int l=endLevel_;l<=startLevel_;l++){
           meas.aux().pyr_[camID].detectFastCorners(candidates_,featureDetScores,l,fastDetectionThreshold_, mpMultiCamera_->cameras_[camID].valid_radius_);
         }
