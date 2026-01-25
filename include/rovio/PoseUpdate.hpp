@@ -240,7 +240,7 @@ class PoseUpdate: public LWF::Update<PoseInnovation,FILTERSTATE,PoseUpdateMeas,P
       y.att() = attNoise;
     }
   }
-  void jacState(MXD& F, const mtState& state) const{
+  void jacState(MXD& F, const mtState& state, bool &itered) const{
     F.setZero();
     if(enablePosition_){
       if(!noFeedbackToRovio_){
