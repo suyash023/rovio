@@ -138,7 +138,7 @@ function install_ros2() {
 #function to install rovio dependencies
 function install_dependencies() {
   install_ros2
-  install_image_view
+  install_image_view "humble"
   install_kindr
 }
 
