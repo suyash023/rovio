@@ -218,6 +218,7 @@ To run ROVIO on your custom camera-IMU setup please refer to this [documentation
 - [ ] Cumulative ATE/RPE across datasets
 - [ ] Live version evaluation
   - [ ] Script to convert point_msgs to pose_msgs
+- [ ] Observability analysis
 
 ### Documentation
 - [ ] Wiki updates
@@ -231,7 +232,7 @@ To run ROVIO on your custom camera-IMU setup please refer to this [documentation
 
 ### Research Integrations
 - [x] TU Delft optimizations
-  - [ ] Toggle feature selection based on Feature detector score or shi-tomasi score
+  - [x] Toggle feature selection based on Feature detector score or shi-tomasi score
 - [ ] MAPLAB optimizations
 - [ ] Health monitoring cleanup
 - [ ] ROTVIO
