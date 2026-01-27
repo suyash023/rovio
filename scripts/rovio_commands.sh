@@ -102,7 +102,7 @@ function install_kindr() {
 
 #function to install image_view to view ROVIO vis published
 function install_image_view() {
-  sudo apt install -y ros2-${1}-image-view
+  sudo apt install -y ros-${1}-image-view
 }
 
 
