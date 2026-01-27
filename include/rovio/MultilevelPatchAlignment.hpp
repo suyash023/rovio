@@ -52,6 +52,7 @@ class MultilevelPatchAlignment {
   mutable double bestIntensityError_; /**<Intensity error for the match.*/
   mutable MultilevelPatch<nLevels,patch_size> mlpTemp_; /**<Temporary multilevel patch used for various computations.*/
   mutable MultilevelPatch<nLevels,patch_size> mlpError_;  /**<Multilevel patch containing errors and its gradient.*/
+  mutable bool skip_gradient_; /**<Skip gradient computation if an iteration is already complete */
   Patch<patch_size> extractedPatches_[nLevels];  /**<Extracted patches used for alignment.*/
   float huberNormThreshold_;  /**<Intensity error threshold for Huber norm.*/
   float w_[nLevels*patch_size*patch_size] __attribute__ ((aligned (16)));  /**<Weighting for patch intensity errors.*/
@@ -129,7 +130,6 @@ class MultilevelPatchAlignment {
     float mean_y = 0;
     float mean_y_dx = 0;
     float mean_y_dy = 0;
-
     // Compute raw error and gradients, as well as mean
     for(int l = 0; l < nLevels; l++){
       mlpError_.isValidPatch_[l] = false;
@@ -137,7 +137,9 @@ class MultilevelPatchAlignment {
     for(int l = l1; l <= l2; l++){
       const auto c_level = pyr.levelTranformCoordinates(c,0,l);
       if(mp.isValidPatch_[l] && extractedPatches_[l].isPatchInFrame(pyr.imgs_[l],c_level,false)){
-        mp.patches_[l].computeGradientParameters();
+        if ( !skip_gradient_ ) {
+          mp.patches_[l].computeGradientParameters();
+        }
         if(mp.patches_[l].validGradientParameters_){
           mlpError_.isValidPatch_[l] = true;
           numLevel++;
@@ -306,7 +308,7 @@ class MultilevelPatchAlignment {
    * @return true, if successful.
    */
   bool getLinearAlignEquationsReduced(const ImagePyramid<nLevels>& pyr, const MultilevelPatch<nLevels,patch_size>& mp, const FeatureCoordinates& c, const int l1, const int l2,
-                                      Eigen::Matrix2f& A_red, Eigen::Vector2f& b_red){
+                                      Eigen::Matrix2f& A_red, Eigen::Vector2f& b_red) {
     bool success = getLinearAlignEquations(pyr,mp,c,l1,l2,A_,b_);
     if(success){
       mColPivHouseholderQR_.compute(A_);
@@ -336,9 +338,10 @@ class MultilevelPatchAlignment {
    * @return true, if successful.
    */
   bool getLinearAlignEquationsReduced(const ImagePyramid<nLevels>& pyr, const MultilevelPatch<nLevels,patch_size>& mp, const FeatureCoordinates& c, const int l1, const int l2,
-                                      Eigen::Matrix2d& A_red, Eigen::Vector2d& b_red){
+                                      Eigen::Matrix2d& A_red, Eigen::Vector2d& b_red, bool &itered){
     Eigen::Matrix2f A_red_;
     Eigen::Vector2f b_red_;
+    skip_gradient_ = itered;
     bool success = getLinearAlignEquationsReduced(pyr,mp,c,l1,l2,A_red_,b_red_);
     if(success){
       A_red = A_red_.cast<double>();

@@ -100,6 +100,12 @@ function install_kindr() {
   cd ${CURRENT_DIR}
 }
 
+#function to install image_view to view ROVIO vis published
+function install_image_view() {
+  sudo apt install -y ros-${1}-image-view
+}
+
+
 #function to install ROS2 if not alredy present
 function install_ros2() {
   ROS_DISTRO="humble"
@@ -132,6 +138,7 @@ function install_ros2() {
 #function to install rovio dependencies
 function install_dependencies() {
   install_ros2
+  install_image_view "humble"
   install_kindr
 }
 
@@ -141,6 +148,22 @@ function install_scene_dependencies() {
   sudo apt-get update
   sudo apt-get install freeglut3-dev libglew-dev
 }
+
+#function to wait for ROVIO to finish completion
+function wait_for_rovio() {
+  echo "Waiting for ROVIO to start..."
+  until ros2 node list | grep -q "/rovio" > /dev/null; do
+    sleep 1
+  done
+
+  echo "ROVIO running, waiting for completion..."
+  while ros2 node list | grep -qx "/rovio" > /dev/null; do
+    sleep 1
+  done
+
+  echo "ROVIO finished"
+}
+
 
 #function to run rovio on euroc datasets
 function run_rovio_euroc() {
@@ -155,7 +178,9 @@ function run_rovio_euroc() {
     rm -rf ${ROVIO_OUTPUT_LOCATION}
     echo "Processing dataset: ${ROS2_BAG_LOCATION}"
     if [ -f ${ROS2_BAG_LOCATION} ]; then
-      ros2 launch rovio ros2_rovio_rosbag_loader_launch.yaml rosbag_filename:=$ROS2_BAG_LOCATION
+      ros2 launch rovio ros2_rovio_rosbag_loader_launch.yaml rosbag_filename:=$ROS2_BAG_LOCATION &
+      wait_for_rovio
+      killall -9 image_view
     else
       echo "Skipping dataset: ${dir}, no ros2 bag file found"
     fi
@@ -195,6 +220,7 @@ run_rovio_euroc_live() {
 
       # After playback finishes, stop recording and ROVIO
       killall -9 rovio_node
+      killall -9 image_view
       killall -9 ros2
 
       echo "Finished dataset: ${dir}"

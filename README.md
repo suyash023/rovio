@@ -24,7 +24,7 @@ git clone git@github.com:suyash023/rovio.git
 git clone git@github.com:suyash023/rovio_interfaces.git
 cd rovio && git submodule update --init --recursive
 source rovio/scripts/rovio_commands.sh
-cd ~/rovio_ws && build_rovio
+cd ~/rovio_ws &&  install_dependencies && build_rovio
 ```
 ## History and Present ##
 
@@ -58,6 +58,7 @@ Papers:
 * http://dx.doi.org/10.3929/ethz-a-010566547 (IROS 2015)
 * http://dx.doi.org/10.1177/0278364917728574 (IJRR 2017)
 * https://rpg.ifi.uzh.ch/docs/ICRA18_Delmerico.pdf (Computational efficiency of ROVIO)
+* https://nva.sikt.no/registration/0198ec92f656-bb2ddc14-baf5-4b0a-8f0b-aca855076c48  (NTNU arl masters thesis on ROVIO using thermal camera (2021))
 * https://www.worldscientific.com/doi/10.1142/S2301385024410012 (Improving ROVIO  2023)
 
 Please also have a look at the wiki: https://github.com/ethz-asl/rovio/wiki
@@ -70,6 +71,8 @@ Please also have a look at the wiki: https://github.com/ethz-asl/rovio/wiki
 * kindr (https://github.com/ethz-asl/kindr) - A git submodule.
 * ~~lightweight_filtering (as submodule, use "git submodule update --init --recursive")~~ : Lightweight_filtering has been removed as submodule from this repo. It is a static dependency now.
 * rovio_interfaces : This is a package needed to use services and custom messages for ROVIO. ROS2 now mandates that messages and services be maintained in a separate package.
+* image_view: ros2 package image_view is needed to view the visualization images published by rovio.
+
 
 ## Building ROVIO ##
 
@@ -100,6 +103,10 @@ git clone git@github.com:suyash023/rovio.git
 git clone git@github.com:suyash023/rovio_interfaces.git
 cd rovio
 git submodule update --init -- recursive
+```
+* Install dependencies: ROS2, image_view
+```bash
+install_dependencies
 ```
 
 * Build rovio
@@ -177,7 +184,7 @@ To run ROVIO on your custom camera-IMU setup please refer to this [documentation
 
 ### Core Features
 - [x] ROS 2 support
-- [ ] Reset Service calls
+- [x] Reset Service calls
 - [ ] ROS 2 image‑based visualization
 - [ ] Multithreading
 - [ ] Resource usage  monitor
@@ -199,14 +206,19 @@ To run ROVIO on your custom camera-IMU setup please refer to this [documentation
 - [ ] 3D LiDAR sensor fusion
 - [ ] Sliding‑window BA (GTSAM/Ceres/G2o)
 - [ ] Vanishing point detection and fusion
+- [ ] Compiler flags
+  - [ ] ffast-math
+  - [ ] arm and cpu based
 - [x] Resizing image
   - [x] Scale camera matrix
+  - [ ] Float resizing for accuracy
 
 ### Evaluation & Tooling
 - [ ] RPE support in `rovio_commands.sh`
 - [ ] Cumulative ATE/RPE across datasets
 - [ ] Live version evaluation
   - [ ] Script to convert point_msgs to pose_msgs
+- [ ] Observability analysis
 
 ### Documentation
 - [ ] Wiki updates
@@ -219,9 +231,11 @@ To run ROVIO on your custom camera-IMU setup please refer to this [documentation
 - [ ] Prebuilt Docker images
 
 ### Research Integrations
-- [ ] TU Delft optimizations
+- [x] TU Delft optimizations
+  - [x] Toggle feature selection based on Feature detector score or shi-tomasi score
 - [ ] MAPLAB optimizations
 - [ ] Health monitoring cleanup
+- [ ] ROTVIO
 
 ## Support & Collaboration
 

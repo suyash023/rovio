@@ -228,12 +228,13 @@ class FeatureTrackerNode : public rclcpp::Node {
     }
 
     // Get new features, if there are too little valid MultilevelPatchFeature%s in the MultilevelPatchSet.
+    std::vector<uint8_t> scores;
     if(fsm_.getValidCount() < min_feature_count_){
       FeatureCoordinatesVec candidates;
       RCLCPP_INFO_STREAM(this->get_logger()," Adding keypoints");
       const double t1 = (double) cv::getTickCount();
       for(int l=l1;l<=l2;l++){
-        pyr_.detectFastCorners(candidates,l,detectionThreshold);
+        pyr_.detectFastCorners(candidates,scores,l,detectionThreshold);
       }
       const double t2 = (double) cv::getTickCount();
       RCLCPP_INFO_STREAM(this->get_logger()," == Detected " << candidates.size() << " on levels " << l1 << "-" << l2 << " (" << (t2-t1)/cv::getTickFrequency()*1000 << " ms)");

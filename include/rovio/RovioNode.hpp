@@ -46,11 +46,12 @@
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <std_srvs/srv/empty.hpp>
 //transform broadcaster in tf2
+#include <image_transport/image_transport.hpp>
 #include <tf2/transform_datatypes.hpp>
 #include <visualization_msgs/msg/marker.hpp>
 #include <sstream>
 //Figure out why there are no srv includes
-// #include <rovio/SrvResetToPose.h>
+#include "rovio_interfaces/srv/srv_reset_to_pose.hpp"
 #include "rovio/RovioFilter.hpp"
 #include "rovio/CoordinateTransform/RovioOutput.hpp"
 #include "rovio/CoordinateTransform/FeatureOutput.hpp"
@@ -143,8 +144,9 @@ class RovioNode : public rclcpp::Node {
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr subGroundtruthOdometry_;
   rclcpp::Subscription<geometry_msgs::msg::TwistStamped>::SharedPtr subVelocity_;
   //Services also need to be figured out
-  //ros::ServiceServer srvResetFilter_;
-  //ros::ServiceServer srvResetToPoseFilter_;
+  rclcpp::Service<std_srvs::srv::Empty>::SharedPtr srvResetFilter_;
+  rclcpp::Service<rovio_interfaces::srv::SrvResetToPose>::SharedPtr srvResetToPoseFilter_;
+
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr pubOdometry_;
   //This needs to be a transform, need to figure that out
   rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pubTransform_;
@@ -159,7 +161,7 @@ class RovioNode : public rclcpp::Node {
   rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr pubMarkers_;
   rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr pubImuBias_;
   rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr pubExtrinsics_[mtState::nCam_];
-
+  std::vector<image_transport::Publisher> imgVisPublishers_;
   // Ros Messages
   //Need to figure out transform stamped messages;
   //geometry_msgs::TransformStamped transformMsg_;
@@ -190,7 +192,8 @@ class RovioNode : public rclcpp::Node {
   rovio::FeatureOutputReadableCT featureOutputReadableCT_;
   rovio::FeatureOutputReadable featureOutputReadable_;
   MXD featureOutputReadableCov_;
-
+  int visFps = 5;
+  int visFrameCount = 0;
   // ROS names for output tf frames.
   std::string map_frame_;
   std::string world_frame_;
@@ -226,37 +229,59 @@ class RovioNode : public rclcpp::Node {
               std::bind(&RovioNode::imgCallback0, this, std::placeholders::_1));
     subImg1_ = this->create_subscription<sensor_msgs::msg::Image>("cam1/image_raw",100,
                 std::bind(&RovioNode::imgCallback1, this, std::placeholders::_1));
-    //subGroundtruth_ = this->create_subscription<geometry_msgs::msg::PoseStamped>("pose", 1000,
-     //             std::bind(&RovioNode::groundtruthCallback, this, std::placeholders::_1));
-    subGroundtruthOdometry_ = this->create_subscription<nav_msgs::msg::Odometry>("odometry", 1000,
-                    std::bind(&RovioNode::groundtruthOdometryCallback,this,std::placeholders::_1 ));
-    subVelocity_ = this->create_subscription<geometry_msgs::msg::TwistStamped>("abss/twist", 1000,
-                      std::bind(&RovioNode::velocityCallback, this, std::placeholders::_1));
+    //subGroundtruth_ =
+    // this->create_subscription<geometry_msgs::msg::PoseStamped>("pose", 1000,
+    //              std::bind(&RovioNode::groundtruthCallback, this,
+    //              std::placeholders::_1));
+    subGroundtruthOdometry_ =
+        this->create_subscription<nav_msgs::msg::Odometry>(
+            "odometry", 1000,
+            std::bind(&RovioNode::groundtruthOdometryCallback, this,
+                      std::placeholders::_1));
+    subVelocity_ = this->create_subscription<geometry_msgs::msg::TwistStamped>(
+        "abss/twist", 1000,
+        std::bind(&RovioNode::velocityCallback, this, std::placeholders::_1));
 
-    // Initialize ROS service servers.
-    //Figure out services later; non critical
-    //srvResetFilter_ = nh_.advertiseService("rovio/reset", &RovioNode::resetServiceCallback, this);
-    //srvResetToPoseFilter_ = nh_.advertiseService("rovio/reset_to_pose", &RovioNode::resetToPoseServiceCallback, this);
-
+    srvResetFilter_ = this->create_service<std_srvs::srv::Empty>(
+        "rovio/reset",
+        std::bind(&RovioNode::resetServiceCallback, this,
+          std::placeholders::_1, std::placeholders::_2));
+    srvResetToPoseFilter_ =
+        this->create_service<rovio_interfaces::srv::SrvResetToPose>(
+            "rovio/reset_to_pose",
+            std::bind(&RovioNode::resetToPoseServiceCallback, this,
+              std::placeholders::_1, std::placeholders::_2));
     // Advertise topics
-    //Figure out transforms later
-    //pubTransform_ = nh_.advertise<geometry_msgs::TransformStamped>("rovio/transform", 1);
-    //pubOdometry_ = nh_.advertise<nav_msgs::Odometry>("rovio/odometry", 1);
-    pubOdometry_ = this->create_publisher<nav_msgs::msg::Odometry>("rovio/odometry", 1);
-    pubPoseWithCovStamped_ = this->create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>(
-                              "rovio/pose_with_covariance_stamped", 1);
-    pubPcl_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("rovio/pcl",
-          10);
-    pubPatch_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("rovio/patch",1);
-    pubMarkers_ = this->create_publisher<visualization_msgs::msg::Marker>("rovio/markers", 10);
-    //figure out transforms later
-    //pub_T_J_W_transform = nh_.advertise<geometry_msgs::TransformStamped>("rovio/T_G_W", 1);
-    for (int camID = 0; camID < mtState::nCam_; camID++)
-    {
-      pubExtrinsics_[camID] = this->create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>(
-        "rovio/extrinsics" + std::to_string(camID), 1);
+    // Figure out transforms later
+    // pubTransform_ =
+    // nh_.advertise<geometry_msgs::TransformStamped>("rovio/transform", 1);
+    pubOdometry_ =
+        this->create_publisher<nav_msgs::msg::Odometry>("rovio/odometry", 1);
+    pubPoseWithCovStamped_ =
+        this->create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>(
+            "rovio/pose_with_covariance_stamped", 1);
+    pubPcl_ =
+        this->create_publisher<sensor_msgs::msg::PointCloud2>("rovio/pcl", 10);
+    pubPatch_ =
+        this->create_publisher<sensor_msgs::msg::PointCloud2>("rovio/patch", 1);
+    pubMarkers_ = this->create_publisher<visualization_msgs::msg::Marker>(
+        "rovio/markers", 10);
+    // figure out transforms later
+    // pub_T_J_W_transform =
+    // nh_.advertise<geometry_msgs::TransformStamped>("rovio/T_G_W", 1);
+    for (int camID = 0; camID < mtState::nCam_; camID++) {
+      pubExtrinsics_[camID] =
+          this->create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>(
+              "rovio/extrinsics" + std::to_string(camID), 1);
+       auto imgVisPublisher_ = image_transport::create_publisher(this,
+              "rovio/imgVis" + std::to_string(camID));
+        imgVisPublishers_.emplace_back(imgVisPublisher_);
     }
-    pubImuBias_ = this->create_publisher<sensor_msgs::msg::Imu>("rovio/imu_biases", 1);
+
+
+
+    pubImuBias_ =
+        this->create_publisher<sensor_msgs::msg::Imu>("rovio/imu_biases", 1);
 
     // Handle coordinate frame naming
     map_frame_ = "/map";
@@ -273,21 +298,18 @@ class RovioNode : public rclcpp::Node {
     resize_image = readAndDeclareParam<bool>("resize_image");
     resize_image_width = readAndDeclareParam<int>("resize_image_width");
     resize_image_height = readAndDeclareParam<int>("resize_image_height");
-
-
-
+    visFps = readAndDeclareParam<int>("vis_fps");
     // Initialize messages
-   // transformMsg_.header.frame_id = world_frame_;
-    //transformMsg_.child_frame_id = imu_frame_;
+    // transformMsg_.header.frame_id = world_frame_;
+    // transformMsg_.child_frame_id = imu_frame_;
 
-    //T_J_W_Msg_.child_frame_id = world_frame_;
-    //T_J_W_Msg_.header.frame_id = map_frame_;
+    // T_J_W_Msg_.child_frame_id = world_frame_;
+    // T_J_W_Msg_.header.frame_id = map_frame_;
 
     odometryMsg_.header.frame_id = world_frame_;
     odometryMsg_.child_frame_id = imu_frame_;
     msgSeq_ = 1;
-    for (int camID = 0; camID < mtState::nCam_; camID++)
-    {
+    for (int camID = 0; camID < mtState::nCam_; camID++) {
       extrinsicsMsg_[camID].header.frame_id = imu_frame_;
     }
     imuBiasMsg_.header.frame_id = world_frame_;
@@ -295,36 +317,44 @@ class RovioNode : public rclcpp::Node {
     imuBiasMsg_.orientation.y = 0;
     imuBiasMsg_.orientation.z = 0;
     imuBiasMsg_.orientation.w = 1;
-    for (int i = 0; i < 9; i++)
-    {
+    for (int i = 0; i < 9; i++) {
       imuBiasMsg_.orientation_covariance[i] = 0.0;
     }
 
     // PointCloud message.
     pclMsg_.header.frame_id = imu_frame_;
-    pclMsg_.height = 1; // Unordered point cloud.
+    pclMsg_.height = 1;             // Unordered point cloud.
     pclMsg_.width = mtState::nMax_; // Number of features/points.
     const int nFieldsPcl = 18;
     std::string namePcl[nFieldsPcl] = {
-      "id", "camId", "rgb", "status", "x", "y", "z", "b_x", "b_y", "b_z", "d", "c_00", "c_01", "c_02", "c_11", "c_12",
-      "c_22", "c_d"
-    };
-    int sizePcl[nFieldsPcl] = {4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4};
-    int countPcl[nFieldsPcl] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
-    int datatypePcl[nFieldsPcl] = {
-      sensor_msgs::msg::PointField::INT32, sensor_msgs::msg::PointField::INT32, sensor_msgs::msg::PointField::UINT32,
-      sensor_msgs::msg::PointField::UINT32,
-      sensor_msgs::msg::PointField::FLOAT32, sensor_msgs::msg::PointField::FLOAT32, sensor_msgs::msg::PointField::FLOAT32,
-      sensor_msgs::msg::PointField::FLOAT32, sensor_msgs::msg::PointField::FLOAT32, sensor_msgs::msg::PointField::FLOAT32,
-      sensor_msgs::msg::PointField::FLOAT32,
-      sensor_msgs::msg::PointField::FLOAT32, sensor_msgs::msg::PointField::FLOAT32, sensor_msgs::msg::PointField::FLOAT32,
-      sensor_msgs::msg::PointField::FLOAT32, sensor_msgs::msg::PointField::FLOAT32, sensor_msgs::msg::PointField::FLOAT32,
-      sensor_msgs::msg::PointField::FLOAT32
-    };
+        "id",   "camId", "rgb",  "status", "x",    "y",
+        "z",    "b_x",   "b_y",  "b_z",    "d",    "c_00",
+        "c_01", "c_02",  "c_11", "c_12",   "c_22", "c_d"};
+    int sizePcl[nFieldsPcl] = {4, 4, 4, 4, 4, 4, 4, 4, 4,
+                               4, 4, 4, 4, 4, 4, 4, 4, 4};
+    int countPcl[nFieldsPcl] = {1, 1, 1, 1, 1, 1, 1, 1, 1,
+                                1, 1, 1, 1, 1, 1, 1, 1, 1};
+    int datatypePcl[nFieldsPcl] = {sensor_msgs::msg::PointField::INT32,
+                                   sensor_msgs::msg::PointField::INT32,
+                                   sensor_msgs::msg::PointField::UINT32,
+                                   sensor_msgs::msg::PointField::UINT32,
+                                   sensor_msgs::msg::PointField::FLOAT32,
+                                   sensor_msgs::msg::PointField::FLOAT32,
+                                   sensor_msgs::msg::PointField::FLOAT32,
+                                   sensor_msgs::msg::PointField::FLOAT32,
+                                   sensor_msgs::msg::PointField::FLOAT32,
+                                   sensor_msgs::msg::PointField::FLOAT32,
+                                   sensor_msgs::msg::PointField::FLOAT32,
+                                   sensor_msgs::msg::PointField::FLOAT32,
+                                   sensor_msgs::msg::PointField::FLOAT32,
+                                   sensor_msgs::msg::PointField::FLOAT32,
+                                   sensor_msgs::msg::PointField::FLOAT32,
+                                   sensor_msgs::msg::PointField::FLOAT32,
+                                   sensor_msgs::msg::PointField::FLOAT32,
+                                   sensor_msgs::msg::PointField::FLOAT32};
     pclMsg_.fields.resize(nFieldsPcl);
     int byteCounter = 0;
-    for (int i = 0; i < nFieldsPcl; i++)
-    {
+    for (int i = 0; i < nFieldsPcl; i++) {
       pclMsg_.fields[i].name = namePcl[i];
       pclMsg_.fields[i].offset = byteCounter;
       pclMsg_.fields[i].count = countPcl[i];
@@ -338,25 +368,24 @@ class RovioNode : public rclcpp::Node {
 
     // PointCloud message.
     patchMsg_.header.frame_id = "";
-    patchMsg_.height = 1; // Unordered point cloud.
+    patchMsg_.height = 1;             // Unordered point cloud.
     patchMsg_.width = mtState::nMax_; // Number of features/points.
     const int nFieldsPatch = 5;
     std::string namePatch[nFieldsPatch] = {"id", "patch", "dx", "dy", "error"};
     int sizePatch[nFieldsPatch] = {4, 4, 4, 4, 4};
     int countPatch[nFieldsPatch] = {
-      1, mtState::nLevels_ * mtState::patchSize_ * mtState::patchSize_,
-      mtState::nLevels_ * mtState::patchSize_ * mtState::patchSize_,
-      mtState::nLevels_ * mtState::patchSize_ * mtState::patchSize_,
-      mtState::nLevels_ * mtState::patchSize_ * mtState::patchSize_
-    };
-    int datatypePatch[nFieldsPatch] = {
-      sensor_msgs::msg::PointField::INT32, sensor_msgs::msg::PointField::FLOAT32, sensor_msgs::msg::PointField::FLOAT32,
-      sensor_msgs::msg::PointField::FLOAT32, sensor_msgs::msg::PointField::FLOAT32
-    };
+        1, mtState::nLevels_ * mtState::patchSize_ * mtState::patchSize_,
+        mtState::nLevels_ * mtState::patchSize_ * mtState::patchSize_,
+        mtState::nLevels_ * mtState::patchSize_ * mtState::patchSize_,
+        mtState::nLevels_ * mtState::patchSize_ * mtState::patchSize_};
+    int datatypePatch[nFieldsPatch] = {sensor_msgs::msg::PointField::INT32,
+                                       sensor_msgs::msg::PointField::FLOAT32,
+                                       sensor_msgs::msg::PointField::FLOAT32,
+                                       sensor_msgs::msg::PointField::FLOAT32,
+                                       sensor_msgs::msg::PointField::FLOAT32};
     patchMsg_.fields.resize(nFieldsPatch);
     byteCounter = 0;
-    for (int i = 0; i < nFieldsPatch; i++)
-    {
+    for (int i = 0; i < nFieldsPatch; i++) {
       patchMsg_.fields[i].name = namePatch[i];
       patchMsg_.fields[i].offset = byteCounter;
       patchMsg_.fields[i].count = countPatch[i];
@@ -668,25 +697,23 @@ class RovioNode : public rclcpp::Node {
 
   /** \brief ROS service handler for resetting the filter.
    */
-  //Figure out services later (non-critical)
-  // bool resetServiceCallback(std_srvs::Empty::Request& /*request*/,
-  //                           std_srvs::Empty::Response& /*response*/){
-  //   requestReset();
-  //   return true;
-  // }
+  void resetServiceCallback(std_srvs::srv::Empty::Request::SharedPtr /*request*/,
+                            std_srvs::srv::Empty::Response::SharedPtr /*response*/){
+    requestReset();
+    return;
+  }
 
   /** \brief ROS service handler for resetting the filter to a given pose.
    */
-  //Figure out services later (non-critical)
-  // bool resetToPoseServiceCallback(rovio::srvResetToPose::Request& request,
-  //                                 rovio::SrvResetToPose::Response& /*response*/){
-  //   V3D WrWM(request.T_WM.position.x, request.T_WM.position.y,
-  //            request.T_WM.position.z);
-  //   QPD qWM(request.T_WM.orientation.w, request.T_WM.orientation.x,
-  //           request.T_WM.orientation.y, request.T_WM.orientation.z);
-  //   requestResetToPose(WrWM, qWM.inverted());
-  //   return true;
-  // }
+   void resetToPoseServiceCallback(rovio_interfaces::srv::SrvResetToPose::Request::SharedPtr request,
+                                   rovio_interfaces::srv::SrvResetToPose::Response::SharedPtr /*response*/){
+     V3D WrWM(request->t_wm.position.x, request->t_wm.position.y,
+              request->t_wm.position.z);
+     QPD qWM(request->t_wm.orientation.w, request->t_wm.orientation.x,
+             request->t_wm.orientation.y, request->t_wm.orientation.z);
+     requestResetToPose(WrWM, qWM.inverted());
+     return;
+   }
 
   /** \brief Reset the filter when the next IMU measurement is received.
    *         The orientaetion is initialized using an accel. measurement.
@@ -718,6 +745,7 @@ class RovioNode : public rclcpp::Node {
     init_state_.state_ = FilterInitializationState::State::WaitForInitExternalPose;
   }
 
+
   /** \brief Executes the update step of the filter and publishes the updated data.
    */
   void updateAndPublish(){
@@ -747,9 +775,16 @@ class RovioNode : public rclcpp::Node {
       if(mpFilter_->safe_.t_ > oldSafeTime){ // Publish only if something changed
         for(int i=0;i<mtState::nCam_;i++){
           if(!mpFilter_->safe_.img_[i].empty() && mpImgUpdate_->doFrameVisualisation_){
-            cv::namedWindow("Tracker" + std::to_string(i),cv::WINDOW_AUTOSIZE);
-            cv::imshow("Tracker" + std::to_string(i), mpFilter_->safe_.img_[i]);
-            cv::waitKey(1);
+            if ( visFrameCount >= visFps) {
+              cv::Mat img = mpFilter_->safe_.img_[i];
+              std_msgs::msg::Header header;
+              header.frame_id = "cam" + std::to_string(i);
+              header.stamp = doubleToStamp(mpFilter_->safe_.t_);
+              auto msg = cv_bridge::CvImage(header, "bgr8", img).toImageMsg();
+              imgVisPublishers_[i].publish(msg);
+              visFrameCount = 0;
+            }
+            visFrameCount++;
           }
         }
         if(!mpFilter_->safe_.patchDrawing_.empty() && mpImgUpdate_->visualizePatches_){
@@ -759,13 +794,13 @@ class RovioNode : public rclcpp::Node {
 
         // Obtain the save filter state.
         mtFilterState& filterState = mpFilter_->safe_;
-	mtState& state = mpFilter_->safe_.state_;
+	      mtState& state = mpFilter_->safe_.state_;
         state.updateMultiCameraExtrinsics(&mpFilter_->multiCamera_);
         MXD& cov = mpFilter_->safe_.cov_;
         imuOutputCT_.transformState(state,imuOutput_);
         // Cout verbose for pose measurements
         if(mpImgUpdate_->verbose_){
-          if(mpPoseUpdate_->inertialPoseIndex_ >=0){
+          if(mpPoseUpdate_->inertialPoseIndex_  >=0){
             std::cout << "Transformation between inertial frames, IrIW, qWI: " << std::endl;
             std::cout << "  " << state.poseLin(mpPoseUpdate_->inertialPoseIndex_).transpose() << std::endl;
             std::cout << "  " << state.poseRot(mpPoseUpdate_->inertialPoseIndex_) << std::endl;
