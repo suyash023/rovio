@@ -78,7 +78,7 @@ ImgUpdate
 {
 	updateVecNormTermination 1e-4;
 	maxNumIteration 20;
-	useFeatureDetectorScoreSelection true;                               Should feature detector scores be used for feature selection
+	useFeatureDetectorScoreSelection false;                               Should feature detector scores be used for feature selection
     doPatchWarping true;										Should the patches be warped
     doFrameVisualisation true;									Should the frames be visualized
     visualizePatches false;										Should the patches be visualized
