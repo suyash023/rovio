@@ -125,9 +125,9 @@ Recommended for low-compute platforms:
 - Reduce image resolution. Recommended: **320x240**. Modify in `ros2_rovio_node_launch.yaml` and `ros2_rovio_rosbag_loader_launch.yaml.`
 - Number of features: **10–15**. Modify in `CMakeLists.txt` in the rovio folder.
 - Patch size: **4**. Modify in `CMakeLists.txt` in the rovio folder.
-- `maxIterations`: **~10**. Modify in `rovio.info` file.
-- `alignMaxUniSample = 1`. Modify in `rovio.info` file.
-
+- `maxIterations` **~10**. Modify in `rovio.info` file.
+- `alignMaxUniSample 1`. Modify in `rovio.info` file.
+- `useFeatureDetectorScoreSelection true`. Modify in `rovio.info` file. Uses Fast Score for feature selection instead of shi-tomasi score which is computationally expensive. Might notice some degradation in performance and improvement in computational efficiency, less computational peaks.
 ---
 
 ## 8. Final Notes
