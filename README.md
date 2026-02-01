@@ -240,6 +240,6 @@ To run ROVIO on your custom camera-IMU setup please refer to this [documentation
 ## Support & Collaboration
 
 If you need help tuning ROVIO for a custom platform or sensor setup,
-limited consulting and troubleshooting support is available. Please contact me via [email](suyashyeotikar@gmail.com) or post in issues section.
+limited consulting and troubleshooting support is available. Please contact me via [email](mailto:suyashyeotikar@gmail.com) or post in issues section.
 
 Community contributions, issue reports, and pull requests are always welcome.
