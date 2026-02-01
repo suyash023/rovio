@@ -4,7 +4,7 @@ project(rovio)
 # Compiler settings
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native -Ofast")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native -Ofast -floop-block -floop-interchange -fno-rounding-math -fprefetch-loop-arrays")
 
 # --- ROVIO parameters ---
 set(ROVIO_NMAXFEATURE 25 CACHE STRING "Number of features for ROVIO")
