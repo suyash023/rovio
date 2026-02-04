@@ -4,8 +4,16 @@ project(rovio)
 # Compiler settings
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native -Ofast -floop-block -floop-interchange -fno-rounding-math -fprefetch-loop-arrays")
-
+if ( CMAKE_SYSTEM_PROCESSOR MATCHES "arm64|aarch64|ARM64")
+	message(STATUS "Building for ARM 64-bit system with arm compile flags")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=armv8-a -mtune=cortex-a76 -Ofast -floop-block -floop-interchange -fno-rounding-math -fprefetch-loop-arrays")
+elseif ( CMAKE_SYSTEM_PROCESSOR MATCHES "arm|ARM")
+	message(STATUS "Building for ARM 32-bit system with armv7 compile flags")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=armv7-a -mfpu=neon-vfpv4 -mfloat-abi=hard -Ofast -floop-block -floop-interchange -fno-rounding-math -fprefetch-loop-arrays")
+else()
+	message(STATUS "Building for non arm system")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native -Ofast -floop-block -floop-interchange -fno-rounding-math -fprefetch-loop-arrays")
+endif()
 # --- ROVIO parameters ---
 set(ROVIO_NMAXFEATURE 25 CACHE STRING "Number of features for ROVIO")
 set(ROVIO_NCAM 1 CACHE STRING "Number of enabled cameras")
