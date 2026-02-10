@@ -46,10 +46,13 @@
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <std_srvs/srv/empty.hpp>
 //transform broadcaster in tf2
+#include <tf2_ros/transform_broadcaster.hpp>
+#include <geometry_msgs/msg/transform_stamped.hpp>
 #include <image_transport/image_transport.hpp>
 #include <tf2/transform_datatypes.hpp>
 #include <visualization_msgs/msg/marker.hpp>
 #include <sstream>
+#include <geometry_msgs/msg/transform_stamped.hpp>
 //Figure out why there are no srv includes
 #include "rovio_interfaces/srv/srv_reset_to_pose.hpp"
 #include "rovio/RovioFilter.hpp"
@@ -149,23 +152,19 @@ class RovioNode : public rclcpp::Node {
 
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr pubOdometry_;
   //This needs to be a transform, need to figure that out
-  rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pubTransform_;
-  //ros::Publisher pubTransform_;
+  rclcpp::Publisher<geometry_msgs::msg::TransformStamped>::SharedPtr pubTransform_;
   rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr pubPoseWithCovStamped_;
   //Another transform that needs to be figured out
-  //ros::Publisher pub_T_J_W_transform;
-  //tf2 broadcast needs to be figured out
-  //tf::TransformBroadcaster tb_;
+  rclcpp::Publisher<geometry_msgs::msg::TransformStamped>::SharedPtr pub_T_J_W_transform;
+  std::unique_ptr<tf2_ros::TransformBroadcaster> tb_;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubPcl_; /**<Publisher: Ros point cloud, visualizing the landmarks.*/
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubPatch_;  /**<Publisher: Patch data. */
   rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr pubMarkers_;
   rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr pubImuBias_;
   rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr pubExtrinsics_[mtState::nCam_];
   std::vector<image_transport::Publisher> imgVisPublishers_;
-  // Ros Messages
-  //Need to figure out transform stamped messages;
-  //geometry_msgs::TransformStamped transformMsg_;
-  //geometry_msgs::TransformStamped T_J_W_Msg_;
+  geometry_msgs::msg::TransformStamped transformMsg_;
+  geometry_msgs::msg::TransformStamped T_J_W_Msg_;
   nav_msgs::msg::Odometry odometryMsg_;
   geometry_msgs::msg::PoseWithCovarianceStamped estimatedPoseWithCovarianceStampedMsg_;
   geometry_msgs::msg::PoseWithCovarianceStamped extrinsicsMsg_[mtState::nCam_];
@@ -173,6 +172,8 @@ class RovioNode : public rclcpp::Node {
   sensor_msgs::msg::PointCloud2 patchMsg_;
   visualization_msgs::msg::Marker markerMsg_;
   sensor_msgs::msg::Imu imuBiasMsg_;
+  geometry_msgs::msg::TransformStamped rovioTFBroadcastMsg_;
+  geometry_msgs::msg::TransformStamped rovioTJWBroadcastMsg_;
   int msgSeq_;
 
   // Rovio outputs and coordinate transformations
@@ -251,10 +252,8 @@ class RovioNode : public rclcpp::Node {
             "rovio/reset_to_pose",
             std::bind(&RovioNode::resetToPoseServiceCallback, this,
               std::placeholders::_1, std::placeholders::_2));
-    // Advertise topics
-    // Figure out transforms later
-    // pubTransform_ =
-    // nh_.advertise<geometry_msgs::TransformStamped>("rovio/transform", 1);
+    pubTransform_ = this->create_publisher<geometry_msgs::msg::TransformStamped>("rovio/transform", 1);
+    tb_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
     pubOdometry_ =
         this->create_publisher<nav_msgs::msg::Odometry>("rovio/odometry", 1);
     pubPoseWithCovStamped_ =
@@ -266,9 +265,7 @@ class RovioNode : public rclcpp::Node {
         this->create_publisher<sensor_msgs::msg::PointCloud2>("rovio/patch", 1);
     pubMarkers_ = this->create_publisher<visualization_msgs::msg::Marker>(
         "rovio/markers", 10);
-    // figure out transforms later
-    // pub_T_J_W_transform =
-    // nh_.advertise<geometry_msgs::TransformStamped>("rovio/T_G_W", 1);
+    pub_T_J_W_transform = this->create_publisher<geometry_msgs::msg::TransformStamped>("rovio/T_J_W",1);
     for (int camID = 0; camID < mtState::nCam_; camID++) {
       pubExtrinsics_[camID] =
           this->create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>(
@@ -813,7 +810,6 @@ class RovioNode : public rclcpp::Node {
         }
 
         // Send Map (Pose Sensor, I) to World (rovio-intern, W) transformation
-//Figure out transforms later
         // if(mpPoseUpdate_->inertialPoseIndex_ >=0){
         //   Eigen::Vector3d IrIW = state.poseLin(mpPoseUpdate_->inertialPoseIndex_);
         //   QPD qWI = state.poseRot(mpPoseUpdate_->inertialPoseIndex_);
@@ -912,36 +908,33 @@ class RovioNode : public rclcpp::Node {
         }
 
         // Send IMU pose message.
-//Figure out transforms later
-        // if(pubTransform_.get_subscription_count() > 0 || forceTransformPublishing_){
-        //   transformMsg_.header.seq = msgSeq_;
-        //   transformMsg_.header.stamp = ros::Time(mpFilter_->safe_.t_);
-        //   transformMsg_.transform.translation.x = imuOutput_.WrWB()(0);
-        //   transformMsg_.transform.translation.y = imuOutput_.WrWB()(1);
-        //   transformMsg_.transform.translation.z = imuOutput_.WrWB()(2);
-        //   transformMsg_.transform.rotation.x = imuOutput_.qBW().x();
-        //   transformMsg_.transform.rotation.y = imuOutput_.qBW().y();
-        //   transformMsg_.transform.rotation.z = imuOutput_.qBW().z();
-        //   transformMsg_.transform.rotation.w = -imuOutput_.qBW().w();
-        //   pubTransform_.publish(transformMsg_);
-        // }
-        //Figure out transforms later
-        // if(pub_T_J_W_transform.getNumSubscribers() > 0 || forceTransformPublishing_){
-        //   if (mpPoseUpdate_->inertialPoseIndex_ >= 0) {
-        //     Eigen::Vector3d IrIW = state.poseLin(mpPoseUpdate_->inertialPoseIndex_);
-        //     QPD qWI = state.poseRot(mpPoseUpdate_->inertialPoseIndex_);
-        //     T_J_W_Msg_.header.seq = msgSeq_;
-        //     T_J_W_Msg_.header.stamp = ros::Time(mpFilter_->safe_.t_);
-        //     T_J_W_Msg_.transform.translation.x = IrIW(0);
-        //     T_J_W_Msg_.transform.translation.y = IrIW(1);
-        //     T_J_W_Msg_.transform.translation.z = IrIW(2);
-        //     T_J_W_Msg_.transform.rotation.x = qWI.x();
-        //     T_J_W_Msg_.transform.rotation.y = qWI.y();
-        //     T_J_W_Msg_.transform.rotation.z = qWI.z();
-        //     T_J_W_Msg_.transform.rotation.w = -qWI.w();
-        //     pub_T_J_W_transform.publish(T_J_W_Msg_);
-        //   }
-        // }
+         if(pubTransform_->get_subscription_count() > 0 || forceTransformPublishing_){
+           transformMsg_.header.stamp = doubletoStamp(mpFilter_->safe_.t_);
+           transformMsg_.transform.translation.x = imuOutput_.WrWB()(0);
+           transformMsg_.transform.translation.y = imuOutput_.WrWB()(1);
+           transformMsg_.transform.translation.z = imuOutput_.WrWB()(2);
+           transformMsg_.transform.rotation.x = imuOutput_.qBW().x();
+           transformMsg_.transform.rotation.y = imuOutput_.qBW().y();
+           transformMsg_.transform.rotation.z = imuOutput_.qBW().z();
+           transformMsg_.transform.rotation.w = -imuOutput_.qBW().w();
+           pubTransform_->publish(transformMsg_);
+        }
+
+        if(pub_T_J_W_transform->get_subscription_count() > 0 || forceTransformPublishing_){
+           if (mpPoseUpdate_->inertialPoseIndex_ >= 0) {
+             Eigen::Vector3d IrIW = state.poseLin(mpPoseUpdate_->inertialPoseIndex_);
+             QPD qWI = state.poseRot(mpPoseUpdate_->inertialPoseIndex_);
+             T_J_W_Msg_.header.stamp = doubleToStamp(mpFilter_->safe_.t_);
+             T_J_W_Msg_.transform.translation.x = IrIW(0);
+             T_J_W_Msg_.transform.translation.y = IrIW(1);
+             T_J_W_Msg_.transform.translation.z = IrIW(2);
+             T_J_W_Msg_.transform.rotation.x = qWI.x();
+             T_J_W_Msg_.transform.rotation.y = qWI.y();
+             T_J_W_Msg_.transform.rotation.z = qWI.z();
+             T_J_W_Msg_.transform.rotation.w = -qWI.w();
+             pub_T_J_W_transform->publish(T_J_W_Msg_);
+           }
+         }
 
         // Publish Extrinsics
         for(int camID=0;camID<mtState::nCam_;camID++){
