@@ -424,8 +424,8 @@ class RovioNode : public rclcpp::Node {
    * @return paramter value
    */
   template <typename paramType>
-  paramType readAndDeclareParam(std::string paramName) {
-    paramType value;
+  paramType readAndDeclareParam(std::string paramName, paramType defaultValue) {
+    paramType value = defaultValue;
     this->declare_parameter(paramName, value);
     this->get_parameter(paramName, value);
     std::stringstream ss;
