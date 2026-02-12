@@ -62,6 +62,7 @@
 #include "rovio/CoordinateTransform/YprOutput.hpp"
 #include "rovio/CoordinateTransform/LandmarkOutput.hpp"
 
+#include <ranges>
 
 namespace rovio {
 
@@ -810,37 +811,51 @@ class RovioNode : public rclcpp::Node {
         }
 
         // Send Map (Pose Sensor, I) to World (rovio-intern, W) transformation
-        // if(mpPoseUpdate_->inertialPoseIndex_ >=0){
-        //   Eigen::Vector3d IrIW = state.poseLin(mpPoseUpdate_->inertialPoseIndex_);
-        //   QPD qWI = state.poseRot(mpPoseUpdate_->inertialPoseIndex_);
-        //   tf::StampedTransform tf_transform_WI;
-        //   tf_transform_WI.frame_id_ = map_frame_;
-        //   tf_transform_WI.child_frame_id_ = world_frame_;
-        //   tf_transform_WI.stamp_ = rclcpp::Time(mpFilter_->safe_.t_);
-        //   tf_transform_WI.setOrigin(tf2::Vector3(IrIW(0),IrIW(1),IrIW(2)));
-        //   tf_transform_WI.setRotation(tf2::Quaternion(qWI.x(),qWI.y(),qWI.z(),-qWI.w()));
-        //   tb_.sendTransform(tf_transform_WI);
-        // }
+        if(mpPoseUpdate_->inertialPoseIndex_ >=0){
+          Eigen::Vector3d IrIW = state.poseLin(mpPoseUpdate_->inertialPoseIndex_);
+          QPD qWI = state.poseRot(mpPoseUpdate_->inertialPoseIndex_);
+          geometry_msgs::msg::TransformStamped tf_transform_WI;
+          tf_transform_WI.header.stamp = doubleToStamp(filterState->safe_.t_);
+          tf_transform_WI.header.frame_id = map_frame_;
+          tf_transform_WI.child_frame_id = world_frame_;
+          tf_transform_WI.transform.translation.x = IrIW(0);
+          tf_transform_WI.transform.translation.y = IrIW(1);
+          tf_transform_WI.transform.translation.z = IrIW(2);
+          tf_transform_WI.transform.rotation.x = qWI.x();
+          tf_transform_WI.transform.rotation.y = qWI.y();
+          tf_transform_WI.transform.rotation.z = qWI.z();
+          tf_transform_WI.transform.rotation.w = -qWI.w();
+          tb_->sendTransform(tf_transform_WI);
+        }
 
-        // // Send IMU pose.
-        // tf::StampedTransform tf_transform_MW;
-        // tf_transform_MW.frame_id_ = world_frame_;
-        // tf_transform_MW.child_frame_id_ = imu_frame_;
-        // tf_transform_MW.stamp_ = ros::Time(mpFilter_->safe_.t_);
-        // tf_transform_MW.setOrigin(tf::Vector3(imuOutput_.WrWB()(0),imuOutput_.WrWB()(1),imuOutput_.WrWB()(2)));
-        // tf_transform_MW.setRotation(tf::Quaternion(imuOutput_.qBW().x(),imuOutput_.qBW().y(),imuOutput_.qBW().z(),-imuOutput_.qBW().w()));
-        // tb_.sendTransform(tf_transform_MW);
 
+        geometry_msgs::msg::TransformStamped tf_transform_Imu;
+        tf_transform_Imu.header.stamp = doubleToStamp(filterState->safe_.t_);
+        tf_transform_Imu.header.frame_id = world_frame_;
+        tf_transform_Imu.child_frame_id = imu_frame_;
+        tf_transform_Imu.transform.translation.x = imuOutput_.WrWB()(0);
+        tf_transform_Imu.transform.translation.y = imuOutput_.WrWB()(1);
+        tf_transform_Imu.transform.translation.z = imuOutput_.WrWB()(2);
+        tf_transform_Imu.transform.rotation.x = imuOutput_.qBW().x();
+        tf_transform_Imu.transform.rotation.y = imuOutput_.qBW().y();
+        tf_transform_Imu.transform.rotation.z = imuOutput_.qBW().z();
+        tf_transform_Imu.transform.rotation.w = -imuOutput_.qBW().w();
+        tb_->sendTransform(tf_transform_Imu);
         // Send camera pose.
-        // for(int camID=0;camID<mtState::nCam_;camID++){
-        //   tf::StampedTransform tf_transform_CM;
-        //   tf_transform_CM.frame_id_ = imu_frame_;
-        //   tf_transform_CM.child_frame_id_ = camera_frame_ + std::to_string(camID);
-        //   tf_transform_CM.stamp_ = ros::Time(mpFilter_->safe_.t_);
-        //   tf_transform_CM.setOrigin(tf::Vector3(state.MrMC(camID)(0),state.MrMC(camID)(1),state.MrMC(camID)(2)));
-        //   tf_transform_CM.setRotation(tf::Quaternion(state.qCM(camID).x(),state.qCM(camID).y(),state.qCM(camID).z(),-state.qCM(camID).w()));
-        //   tb_.sendTransform(tf_transform_CM);
-        // }
+        for (int camID = 0; camID < mtState::nCam_; camID++) {
+          geometry_msgs::msg::TransformStamped tf_transform_Cam;
+          tf_transform_Cam.header.stamp = doubleToStamp(filterState->safe_.t_);
+          tf_transform_Cam.header.frame_id = imu_frame_;
+          tf_transform_Cam.child_frame_id = camera_frame_ + std::to_string(camID);
+          tf_transform_Cam.transform.translation.x = state.MrMC(camID)(0);
+          tf_transform_Cam.transform.translation.y = state.MrMC(camID)(1);
+          tf_transform_Cam.transform.translation.z = state.MrMC(camID)(2);
+          tf_transform_Cam.transform.rotation.x = state.qCM(camID).x();
+          tf_transform_Cam.transform.rotation.y = state.qCM(camID).y();
+          tf_transform_Cam.transform.rotation.z = state.qCM(camID).z();
+          tf_transform_Cam.transform.rotation.w = -state.qCM(camID).w();
+          tb_->sendTransform(tf_transform_Cam);
+        }
 
         // Publish Odometry
         if(pubOdometry_->get_subscription_count() > 0 || forceOdometryPublishing_){
