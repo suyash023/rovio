@@ -286,24 +286,17 @@ class RovioNode : public rclcpp::Node {
     world_frame_ = "/world";
     camera_frame_ = "/camera";
     imu_frame_ = "/imu";
-    map_frame_ = readAndDeclareParam<std::string>("map_frame");
-    world_frame_ = readAndDeclareParam<std::string>("world_frame");
-    camera_frame_ = readAndDeclareParam<std::string>("camera_frame");
-    imu_frame_ = readAndDeclareParam<std::string>("imu_frame");
-    imu_topic = readAndDeclareParam<std::string>("imu_topic");
-    cam0_topic = readAndDeclareParam<std::string>("cam0_topic");
-    cam1_topic = readAndDeclareParam<std::string>("cam1_topic");
-    resize_image = readAndDeclareParam<bool>("resize_image");
-    resize_image_width = readAndDeclareParam<int>("resize_image_width");
-    resize_image_height = readAndDeclareParam<int>("resize_image_height");
-    visFps = readAndDeclareParam<int>("vis_fps");
-    // Initialize messages
-    // transformMsg_.header.frame_id = world_frame_;
-    // transformMsg_.child_frame_id = imu_frame_;
-
-    // T_J_W_Msg_.child_frame_id = world_frame_;
-    // T_J_W_Msg_.header.frame_id = map_frame_;
-
+    map_frame_ = readAndDeclareParam<std::string>("map_frame", map_frame_);
+    world_frame_ = readAndDeclareParam<std::string>("world_frame", world_frame_);
+    camera_frame_ = readAndDeclareParam<std::string>("camera_frame", camera_frame_);
+    imu_frame_ = readAndDeclareParam<std::string>("imu_frame", imu_frame_);
+    imu_topic = readAndDeclareParam<std::string>("imu_topic", imu_topic);
+    cam0_topic = readAndDeclareParam<std::string>("cam0_topic", cam0_topic);
+    cam1_topic = readAndDeclareParam<std::string>("cam1_topic", cam1_topic);
+    resize_image = readAndDeclareParam<bool>("resize_image", resize_image);
+    resize_image_width = readAndDeclareParam<int>("resize_image_width", resize_image_width);
+    resize_image_height = readAndDeclareParam<int>("resize_image_height", resize_image_height);
+    visFps = readAndDeclareParam<int>("vis_fps", visFps);
     odometryMsg_.header.frame_id = world_frame_;
     odometryMsg_.child_frame_id = imu_frame_;
     msgSeq_ = 1;
