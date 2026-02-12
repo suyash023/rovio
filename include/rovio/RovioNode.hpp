@@ -815,7 +815,7 @@ class RovioNode : public rclcpp::Node {
           Eigen::Vector3d IrIW = state.poseLin(mpPoseUpdate_->inertialPoseIndex_);
           QPD qWI = state.poseRot(mpPoseUpdate_->inertialPoseIndex_);
           geometry_msgs::msg::TransformStamped tf_transform_WI;
-          tf_transform_WI.header.stamp = doubleToStamp(filterState->safe_.t_);
+          tf_transform_WI.header.stamp = doubleToStamp(mpFilter_->safe_.t_);
           tf_transform_WI.header.frame_id = map_frame_;
           tf_transform_WI.child_frame_id = world_frame_;
           tf_transform_WI.transform.translation.x = IrIW(0);
@@ -830,7 +830,7 @@ class RovioNode : public rclcpp::Node {
 
 
         geometry_msgs::msg::TransformStamped tf_transform_Imu;
-        tf_transform_Imu.header.stamp = doubleToStamp(filterState->safe_.t_);
+        tf_transform_Imu.header.stamp = doubleToStamp(mpFilter_->safe_.t_);
         tf_transform_Imu.header.frame_id = world_frame_;
         tf_transform_Imu.child_frame_id = imu_frame_;
         tf_transform_Imu.transform.translation.x = imuOutput_.WrWB()(0);
@@ -844,7 +844,7 @@ class RovioNode : public rclcpp::Node {
         // Send camera pose.
         for (int camID = 0; camID < mtState::nCam_; camID++) {
           geometry_msgs::msg::TransformStamped tf_transform_Cam;
-          tf_transform_Cam.header.stamp = doubleToStamp(filterState->safe_.t_);
+          tf_transform_Cam.header.stamp = doubleToStamp(mpFilter_->safe_.t_);
           tf_transform_Cam.header.frame_id = imu_frame_;
           tf_transform_Cam.child_frame_id = camera_frame_ + std::to_string(camID);
           tf_transform_Cam.transform.translation.x = state.MrMC(camID)(0);
@@ -924,7 +924,7 @@ class RovioNode : public rclcpp::Node {
 
         // Send IMU pose message.
          if(pubTransform_->get_subscription_count() > 0 || forceTransformPublishing_){
-           transformMsg_.header.stamp = doubletoStamp(mpFilter_->safe_.t_);
+           transformMsg_.header.stamp = doubleToStamp(mpFilter_->safe_.t_);
            transformMsg_.transform.translation.x = imuOutput_.WrWB()(0);
            transformMsg_.transform.translation.y = imuOutput_.WrWB()(1);
            transformMsg_.transform.translation.z = imuOutput_.WrWB()(2);
