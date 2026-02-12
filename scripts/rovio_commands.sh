@@ -198,6 +198,7 @@ run_rovio_euroc_live() {
   for dir in "${dirList[@]}"; do
     ROS2_BAG_LOCATION="${EUROC_DATASETS_LOCATION}/${dir}/${dir}_ros2/${dir}_ros2.db3"
     ROVIO_OUTPUT_LOCATION="${EUROC_DATASETS_LOCATION}/${dir}/${dir}_ros2/rovio_live"
+    rm -rf "${ROVIO_OUTPUT_LOCATION}"
     mkdir -p "${ROVIO_OUTPUT_LOCATION}"
 
     echo "Processing dataset: ${ROS2_BAG_LOCATION}"
@@ -220,8 +221,11 @@ run_rovio_euroc_live() {
 
       # After playback finishes, stop recording and ROVIO
       killall -9 rovio_node
+      sleep 1
       killall -9 image_view
+      sleep 1
       killall -9 ros2
+      sleep 1
 
       echo "Finished dataset: ${dir}"
     else
