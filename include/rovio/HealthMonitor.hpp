@@ -35,7 +35,7 @@ public:
    * @param healthMsg health message to be populated
    * @return None
    */
-  void populateHealthMsg(std::shared_ptr<mtFilter> mpFilter_,
+  void populateHealthMsg(const std::shared_ptr<mtFilter> mpFilter_,
     rovio_interfaces::msg::Health::SharedPtr healthMsg, std::string imu_frame) {
     if ( !this->healthMsgValid) {
       return;
@@ -53,40 +53,41 @@ public:
   }
 
 
+
   /**
    * @brief Function to compute the median of the features depths covariances.
    * @param state Current state vector of ROVIO
    * @return float value that is the median of the depth covariances
    */
-  float computeFeatureDepthCovMedian(std::shared_ptr<mtFilter> mpFilter_ ) {}
+  float computeFeatureDepthCovMedian(const std::shared_ptr<mtFilter> mpFilter_ ) {}
 
   /**
    * @brief Function to compute the valid feature ratio
    * @param state Current state vector of ROVIO
    * @return float ratio of valid to max features.
    */
-  float computeValidFeatureRatio(std::shared_ptr<mtFilter> mpFilter_) {}
+  float computeValidFeatureRatio(const std::shared_ptr<mtFilter> mpFilter_) {}
 
   /**
    * @brief Function to compute the tracked feature ratio.
    * @param state Current state vector of ROVIO
    * @return float ratio of tracked to max features.
    */
-  float computeTrackedFeatureRatio(std::shared_ptr<mtFilter> mpFilter_) {}
+  float computeTrackedFeatureRatio(const std::shared_ptr<mtFilter> mpFilter_) {}
 
   /**
    * @breif Function to compute the RMSE of NIS z-score
    * @param state Current state vector of ROVIO
    * @return float RMSE of NIS zscore
    */
-  float computeNISZScore(std::shared_ptr<mtFilter> mpFilter_) {}
+  float computeNISZScore(const std::shared_ptr<mtFilter> mpFilter_) {}
 
   /**
    * @brief Function to compute the ratio of features above a pixel covariance threshold
    * @param mtFilter &state
    * @return float ratio of number of features below pixel covariance threshold to max features
    */
-  float computePixelCovRatio(std::shared_ptr<mtFilter> mpFilter_) {}
+  float computePixelCovRatio( const std::shared_ptr<mtFilter> mpFilter_) {}
 
 
   /**
