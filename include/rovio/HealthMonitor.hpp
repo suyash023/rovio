@@ -66,14 +66,35 @@ public:
    * @param state Current state vector of ROVIO
    * @return float ratio of valid to max features.
    */
-  float computeValidFeatureRatio(const std::shared_ptr<mtFilter> mpFilter_) {}
+  float computeValidFeatureRatio(const std::shared_ptr<mtFilter> mpFilter_) {
+    auto featureManager = mpFilter_->safe_.fsm_;
+    int validCount = 0;
+    for (int i = 0; i < nMax_; i++ ) {
+      if ( featureManager.isValid_[i] ) {
+        validCount++;
+      }
+    }
+    validFeatureRatio = static_cast<float>(validCount) / nMax_;
+    return validFeatureRatio;
+  }
 
   /**
    * @brief Function to compute the tracked feature ratio.
    * @param state Current state vector of ROVIO
    * @return float ratio of tracked to max features.
    */
-  float computeTrackedFeatureRatio(const std::shared_ptr<mtFilter> mpFilter_) {}
+  float computeTrackedFeatureRatio(const std::shared_ptr<mtFilter> mpFilter_) {
+    auto featureManager = mpFilter_->safe_.fsm_;
+    int trackedCount = 0;
+    for ( int i = 0; i < nMax_; i++ ) {
+      for (int cam = 0; cam < nCam_; cam++ ) {
+        if ( featureManager.features_[i].mpStatistics_->status_[cam] == rovio::TRACKED ) {
+          trackedCount++;
+        }
+      }
+    }
+    return static_cast<float>(trackedCount) /nMax_;
+  }
 
   /**
    * @breif Function to compute the RMSE of NIS z-score
@@ -94,9 +115,13 @@ public:
    * @brief Function to compute the deviation of speed from threshold value
    * @param threshold value of velocity
    * @param velocity estimated ROVIO
+   * @return double difference of velocity and speed
    */
-  float computeUnhealthyVelocityDeviation(const float thresholdSpeed, Eigen::Vector3d rovioVelocity);
 
+  double computeUnhealthyVelocityDeviation(const float thresholdSpeed, Eigen::Vector3d rovioVelocity) {
+    double velocityNorm = rovioVelocity.norm();
+    return std::abs(thresholdSpeed -  velocityNorm);
+  }
 
   /**
    * @brief Function to compute the deviation of IMU accelration from threshold value
@@ -104,7 +129,10 @@ public:
    * @param threshold value of acceleration
    * @param IMU accel reading
    */
-  float computeAccelDeviation(const float thresholdAccel, Eigen::Vector3d IMUAccceleration );
+  double computeAccelDeviation(const float thresholdAccel, Eigen::Vector3d IMUAcceleration ) {
+    double IMUAccelNorm = IMUAcceleration.norm();
+    return std::abs(thresholdAccel - IMUAccelNorm);
+  }
 };
 
 
